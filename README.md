@@ -2,12 +2,9 @@
 
 ## Lernziele1. Kennenlernen der Entwicklungsumgebung
 2. Einarbeiten in die Programmiersprache C++ 
-3. Hardwarenahe Programmierung: CGA-Bildschirm und Tastatur## A1.1: CGA-BildschirmFür Testausgaben und zur Erleichterung der Fehlersuche soll das Betriebssystem zunächst Ausgabefunktionen für den Textbildschirm erhalten. Die Funktionsfähigkeit soll mit Hilfe eines aussagefähigen Testprogramms gezeigt werden, siehe Bildschirmfoto unten.
-Dazu soll in `main.cc` in der Einstiegsfunktion `main` das Objekt `kout` für verschieden formatierte Ausgaben genutzt werden. Diese sollen ähnlich wie bei der C++ IO-Streams Bibliothek verwendet werden können. Damit die Ausgabefunktionen überall in hhuTOS genutzt werden kann, ist in der gegebenen Klasse `Gobals`, ein globales `CGA_Stream`-Objekt `kout` bereits definiert.
-In folgenden Dateien müssen Quelltexte einfügt werden:
-`main.cc`, `devices/CGA.cc` und `user/aufgabe1/TextDemo.cc`.
+3. Hardwarenahe Programmierung: CGA-Bildschirm und Tastatur## A1.1: CGA-BildschirmFür Testausgaben und zur Erleichterung der Fehlersuche soll das Betriebssystem zunächst Ausgabefunktionen für den Textbildschirm erhalten. Die Funktionsfähigkeit soll mit Hilfe eines aussagefähigen Testprogramms gezeigt werden, siehe Bildschirmfoto unten.Dazu soll in `startup.rs` in der Einstiegsfunktion `startup` die Makros `print!` und `println!` für verschieden formatierte Ausgaben, wie in Rust üblich, genutzt werden. Damit die Ausgabe-Makros in allen Modulen funktionieren wurde in `cga_print.rs` ein globaler statischer `Writer`definiert. Dieser wird in den vorgegebenen Makros automatisch benutzt.In folgenden Dateien müssen Quelltexte einfügt werden: `startup.rs`, `user/text_demo.rs` und`devices/cga.rs`
 
-*Beachten Sie die Kommentare im Quelltext der Vorgabe, sowie die Datei* `CGA.pdf`
+*Beachten Sie die Kommentare im Quelltext der Vorgabe, sowie die Datei* `HinweiseCGA.pdf`
 
 ### Beispielausgaben
 
@@ -25,17 +22,12 @@ Beginnen Sie mit der Funktion `key_hit`:
 
 Danach soll die Funktion `set_repeate_rate` implementiert werden. Zum Schluss können Sie die Funktion `set_led` implementieren (optional).
 
-Namen von benötigten Variablen und Konstanten:
-- Control-Port: `ctrl_port`
-- Daten-Port: `data_port`
-- OUTB: `outb`
-- AUXB: `auxb`
+Namen von benötigten Variablen und Konstanten:- Control-Port: `KBD_CTRL_PORT`- Daten-Port: `KBD_DATA_PORT`- OUTB: `KBD_OUTB`- AUXB: `KBD_AUXB`
 
-Die Befehle für die Implementierung von `set_led` finden Sie in `Keyboard.h`. Warten und prüfen Sie nach dem Absenden eines Befehls die Antwort auf `kbd_reply::ack`. 
-
-In folgenden Dateien müssen Quelltexte einfügt werden: `devices/Keyboard.cc` und `user/aufgabe1/KeyboardDemo.cc`.
+Die Befehle für die Implementierung von `set_led` finden Sie in `keyboard.rs`. Warten und prüfen Sie nach dem Absenden eines Befehls die Antwort auf `KBD_REPLY_ACK`. 
+Die Tabellen für die Abbildung von Scan-Codes auf ASCII-Codes unterstützen derzeit keine Umlaute.In folgenden Dateien müssen Quelltexte einfügt werden: `user/keyboard_demo.rs` und`devices/keyboard.rs`.
 
 *Achtung:
-Die Methoden zur Ansteuerung der LEDs und der Tastaturwiederholrate funktionieren nur richtig auf echter Hardware.*
+Die Methode zur Ansteuerung der LEDs funktioniert nur richtig auf echter Hardware.*
 
-*Beachten Sie die Kommentare im Quelltext der Vorgabe, sowie die Dateien* `Tastatur.pdf` *und* `HinweiseTastatur.pdf`.
+*Beachten Sie die Kommentare im Quelltext der Vorgabe, sowie die Datei* `HinweiseTastatur.pdf`.

@@ -4,13 +4,11 @@
 #![no_std]
 #![allow(dead_code)]          // avoid warnings 
 #![allow(unused_variables)]   // avoid warnings 
-#![feature(alloc_error_handler)] 
 #![allow(unused_imports)]
 #![feature(restricted_std)]
 #![allow(unused_macros)]
 
 extern crate spin; // we need a mutex in devices::cga_print
-extern crate alloc;  // this is for heap allocations
 extern crate std;    // needed for threads
 
 
@@ -21,9 +19,6 @@ mod kernel;
 mod lib;
 mod user;
 mod consts;
-
-use alloc::{boxed::Box};
-
 
 use devices::cga;         // shortcut for cga
 use devices::cga_print;   // used to import code needed by println! 

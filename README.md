@@ -8,7 +8,7 @@
 
 ### Beispielausgaben
 
-![CGA](https://github.com/mschoett/hhuTOSc/blob/aufgabe-1/img/cga.jpg)
+![CGA](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-1/img/cga.jpg)
 
 
 ## A1.2: Tastatur

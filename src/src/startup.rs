@@ -5,7 +5,6 @@
 #![allow(dead_code)]          // avoid warnings 
 #![allow(unused_variables)]   // avoid warnings 
 #![allow(unused_imports)]
-#![feature(restricted_std)]
 #![allow(unused_macros)]
 
 extern crate spin; // we need a mutex in devices::cga_print

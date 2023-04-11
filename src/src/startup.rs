@@ -9,7 +9,6 @@
 #![allow(unused_macros)]
 
 extern crate spin; // we need a mutex in devices::cga_print
-extern crate std;    // needed for threads
 
 
 // insert other modules

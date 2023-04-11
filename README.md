@@ -8,11 +8,10 @@ In dieser Aufgabe soll ein sehr einfacher sogenannter Bump-Allocator implementie
 
 Die Heapgröße ist fest auf 1 MB eingestellt, im Speicherbereich 3 – 4 MB. Bei einer Speicherfreigabe passiert nichts. Bauen Sie die Vorgabe in Ihr System ein und stellen Sie sicher, dass der Heap möglichst bald in der Einstiegsfunktion des Betriebssystems initialisiert wird.Zur Überprüfung der Implementierung sollen einfache Tests geschrieben werden. Weitere Information hierzu finden sich in den nachfolgenden Hinweisen zur jeweiligen Programmiersprache.
 
-In der Datei `BumpAllocator.cc` soll die Bump-Speicherverwaltung implementiert werden. Die C++Operatoren für `new` und `delete` sind überschrieben und rufen die entsprechenden Funktionen auf.In `Globals.cc/.h` gibt es drei neue globale Variablen: `total_mem` wird in `Allocator.cc` gesetzt und enthält die RAM-Kapazität des Rechners (fest auf 8 MB eingestellt). Zudem gibt es für jeden Allokator ein statisches Objekt, für diese Aufgabe BumpAllocator allocator.
-In `boot.asm` wird nun der Label `_ZdlPv` auskommentiert, welcher bisher bei einem `delete` angesprungen wurde. Nun wird `delete` im jeweiligen Allokator aufgerufen. Als Tests sollen in `HeapDemo.cc` Instanzen einer eigenen Klasse sowie Arrays von Objekten und/oder primitiven Datentypen angelegt und freigegeben werden. 
+In der Datei `bump.rs` soll die Bump-Speicherverwaltung implementiert werden. Die Integration in die Rust-Runtime erfolgt über das `GloballAlloc` trait. Der Speicherallokator wird in`allocator.rs` in der statischen Variable `ALLOKATOR` angelegt und muss möglichst früh in `startup.rs` initialisiert werden.Als Tests sollen in `heap_demo.rs` eigene Structs mithilfe von `Box::new` auf dem Heap angelegtwerden. Zu beachten ist, dass es in Rust kein `delete` gibt. 
 
-In folgenden Dateien müssen Quelltexte einfügt werden: `user/aufgabe2/HeapDemo.cc` und `kernel/allocator/BumpAllocator.cc`.
-
+Sofern die Ownership der Structs nicht weitergegeben wird, so werden die Structs beim Rücksprung aus der Funktion, in der sie angelegt wurden, automatisch freigegeben, indem automatisch `deallocate` im Allokator aufgerufen wird.Im Gegensatz zu C/C++ muss das Längenfeld eines belegten Blocks bei der Allokation nicht manuellbehandelt werden. Dies erledigt die Rust-Runtime automatisch, jedoch ist der Parameter `layout` in `alloc` und `dealloc` zu beachten.
+In folgenden Dateien müssen Quelltexte einfügt werden: `kernel/allocator/bump.rs` und`user/aufgabe2/heap_demo.rs`.
 
 ## A2.2: Listenbasierter Allokator
 In dieser Aufgabe soll ein verbesserter Allokator implementiert werden, welcher freigegeben Speicherblöcke wiederverwenden kann. Hierzu sollen alle freien Blöcke miteinander verkettet werden, siehe Abbildung.
@@ -22,26 +21,26 @@ In dieser Aufgabe soll ein verbesserter Allokator implementiert werden, welcher 
 Zu Beginn gibt es nur einen großen freien Speicherblock, der den gesamten freien Speicher umfasst. Im Rahmen der Heap-Initialisierung soll dieser eine freie Block als erster und einziger Eintrag in der verketteten Freispeicherliste gespeichert werden, siehe Abbildung.**Allokation**. Bei der Allokation eines Speicherblocks muss die Freispeicherliste nach einem passenden Block durchsucht werden. Es reicht, wenn immer der erste Block genommen wird, der mindestens die Größe der Allokation erfüllt. Sofern der verbleibende Rest groß genug ist, um die Metadaten eines Listeneintrags zu speichern, so soll dieser abgeschnitten und wieder in die Freispeicherliste eingefügt werden.**Freigabe**. Der freizugebende Block soll in die Freispeicherliste wieder eingehängt werden. Im Prinzip reicht es, wenn er am Anfang der Liste eingefügt wird. Optional kann geprüft werden, ob benachbarte Speicherbereiche auch frei sind und damit verschmolzen werden kann. Dazu muss in der Liste gesucht werden. 
 Damit die Freispeicherverwaltung getestet und geprüft werden kann, ist es sinnvoll eine Ausgabe-Funktion zu implementieren, welche die Freispeicherliste komplett auf dem Bildschirm ausgibt. Zudem soll die Test-Anwendung aus Aufgabe 2.1 ausgebaut werden, um auch die Freigabe von Speicherblöcken zu testen.
 
-Die folgenden Hinweise sind Ergänzungen zu denen in Aufgabe A2.1!
-In der Datei `LinkedListAllocator.cc` soll die Speicherverwaltung implementiert werden. In`Globals.cc/.h` soll nun LinkedListAllokator allocator verwendet werden.
-Es ist zu beachten, dass bei der Allokation neben der angeforderten Speichergröße auch 4 Byte zusätzlich für eine Längenangabe berücksichtigt werden. Dies ist notwendig, damit bei einer Freigabe eines Speicherblocks die Längeninformation verfügbar ist. Es bietet sich an die Länge zu Beginn eines belegten Speicherblocks abzuspeichern und beim Aufruf von `alloc` einen Zeiger direkt nach dem Längenfeld zurückzugeben.
-In folgenden Dateien müssen Quelltexte einfügt werden: `user/aufgabe2/HeapDemo.cc` und`kernel/allocator/LinkedListAllocator.cc`.
+Die folgenden Hinweise sind Ergänzungen zu denen in Aufgabe 2.1!
+In der Datei `list.rs` soll die Speicherverwaltung implementiert werden. Der Speicherallokator wird in `allocator.rs` in der statischen Variable `ALLOKATOR` angelegt und muss möglichst früh in`startup.rs` initialisiert werden.
 
+Verwenden/erweitern Sie die Test aus Aufgabe 2.1. Ein Anregung dazu finden Sie auch in den nachstehenden Abbildungen.
+In folgenden Dateien müssen Quelltexte einfügt werden: `kernel/allocator/list.rs` und`user/aufgabe2/heap_demo.rs`.
 
 ## A2.3: PC-Lautsprecher
-In dieser Aufgabe muss die Methode `PCPSK::delay` implementiert werden. Diese Methode ist für das Abspielen von Tönen notwendig, die eine gegebene Zeitdauer gespielt werden sollen. Da wir bisher keine Interrupts verarbeiten können und auch keine Systemzeit haben bietet es sich an den Zähler 0 des Programmable Interval Timer (PIT) hierfür zu verwenden. Sie können dann in einer Schleife fortlaufend den aktuellen Zählerstand auslesen, der ja mit 1,19 MHz dekrementiert wirdund so näherungsweise die Ausführung, eine gegebene Zeit in Millisekunden, verzögern. Dies ist eine unsaubere Lösung die wir später ersetzen werden.
+In dieser Aufgabe muss die Funktion `delay` implementiert werden. Diese Funktion ist für das Abspielen von Tönen notwendig, die eine gegebene Zeitdauer gespielt werden sollen. Da wir bisher keine Interrupts verarbeiten können und auch keine Systemzeit haben bietet es sich an den Zähler 0 des Programmable Interval Timer (PIT) hierfür zu verwenden. Sie können dann in einer Schleife fortlaufend den aktuellen Zählerstand auslesen, der ja mit 1,19 MHz dekrementiert wirdund so näherungsweise die Ausführung, eine gegebene Zeit in Millisekunden, verzögern. Dies ist eine unsaubere Lösung die wir später ersetzen werden.
 Hinweis: gute Informationen zum PIT 8254 finden Sie in der Datei `8254.pdf` sowie hier:http://wiki.osdev.org/Programmable_Interval_Timer
 
-In folgenden Dateien müssen Quelltexte einfügt werden: `devices/PCSPK.cc` und`user/aufgabe2/SoundDemo.cc`.
+In folgenden Dateien müssen Quelltexte einfügt werden: `devices/pcspk.rs` und`user/aufgabe2/sound_demo.rs`.
 
 
 ## Beispielausgaben zur Speicherverwaltung
 Nachstehend sind einige Screenshots zum Testen der Speicherverwaltung. Sie können sich natürlich selbst Testfunktionen und Testausgaben überlegen. Sollten die Ausgaben über mehrere Seiten gehen bietet es sich an eine Zeitverzögerung mit `pcspk.delay` zu realsieren. Dies ist umständlich und nur als vorübergehende Lösung gedacht; später können wir Tastatureingaben verarbeiten ...
 
-![Heap1](https://github.com/mschoett/hhuTOSc/blob/aufgabe-2/img/heap1.jpg)
+![Heap1](https://github.com/mschoett/hhuTOSr/blob/aufgabe-2/img/heap1.jpg)
 
-![Heap2](https://github.com/mschoett/hhuTOSc/blob/aufgabe-2/img/heap2.jpg)
+![Heap2](https://github.com/mschoett/hhuTOSr/blob/aufgabe-2/img/heap2.jpg)
 
-![Heap3](https://github.com/mschoett/hhuTOSc/blob/aufgabe-2/img/heap3.jpg)
+![Heap3](https://github.com/mschoett/hhuTOSr/blob/aufgabe-2/img/heap3.jpg)
 
-![Heap4](https://github.com/mschoett/hhuTOSc/blob/aufgabe-2/img/heap4.jpg)
+![Heap4](https://github.com/mschoett/hhuTOSr/blob/aufgabe-2/img/heap4.jpg)

@@ -53,7 +53,7 @@ fn aufgabe2() {
 pub extern fn startup() {
 
     // Speicherverwaltung initialisieren
-    allocator::init();
+   /* Hier muss Code eingefuegt werden */
 
 //    aufgabe1();
     aufgabe2();

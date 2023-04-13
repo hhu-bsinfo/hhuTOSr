@@ -1,58 +1,77 @@
-# Aufgabe 3: Interrupts
+# Aufgabe 4: Koroutinen und Threads
 
 ## Lernziele
-
-1. Funktionsweise des Interrupt-Controllers verstehen
-2. Behandlung von Interrupts implementieren, am Beispiel der Tastatur
-3. Kritische Abschnitte (Synchronisierung) verstehen und einsetzen
-## A3.1: Programmable Interrupt Controller (PIC)
-In dieser Aufgabe soll die Interrupt-Verarbeitung aktiviert und anhand der Tastatur geprüft werden. Zunächst muss der PIC programmiert werden, um den Interrupt für die Tastatur zuzulassen. Zudem muss der Prozessor Interrupts vom PIC annehmen, was mithilfe der Funktion `cpu.enable_int` gemacht wird. Wenn dies funktioniert, müsste automatisch bei jedem Drücken und Loslassen einer Taste die Funktion `int_disp`, der Interrupt-Dispatcher in C aufgerufen werden, da die Interrupt-Vektortabelle im Assembler-Code (siehe Vorgabe) entsprechend initialisiert wurde.
-Mit einer Ausgabe in `int_disp` kann dieser Schritt leicht getestet werden, zumindest einige Male. Wenn die Zeichen nicht vom Tastaturcontroller abgeholt werden, läuft der Tastaturpuffer irgendwann voll. Sobald der Puffer voll ist, sendet der Tastaturcontroller keine Interrupts mehr. Deshalb kann es durchaus passieren, dass zunächst nur für ein oder zwei Tastendrücke Interrupts auftreten.
-
-In der Datei `intdispatcher.rs` soll in der Funktion `int_disp` eine Textausgabe eingefügt werden. Hierfür sollen nicht die Makros `print!` und `println!` von Rust verwendet werden, sondern direkt auf das Modul cga zugegriffen werden. Hintergrund ist, dass die print-Makros einen Mutex verwenden, welcher eventuell während der Interrupt-Verarbeitung gerade durch die Anwendung gesperrt ist. In diesem Fall würde eine Verklemmung auftreten.
-In `keyboard.rs` soll in der vorgegebenen Funktion plugin die ISR der Tastatur in dem Modul`intdispatcher` registriert (mit der Funktion `assign`) sowie im Modul `pic` die Interrupts von der Tastatur freigeschaltet werden. Die Funktion `trigger` ist im Modul `Keyboard` bereits als leere Funktion schon vorhanden.
-In `startup.rs` soll die Funktion `plugin` von der Tastatur aufgerufen werden und danach die Interruptverarbeitung durch die CPU, mithilfe des Moduls `cpu`, freigeschaltet werden.Die IDT wird durch den in `startup.rs` vorhandenen Aufruf `interrupts::init` eingerichtet. Dadurch wird bei jedem Interrupt die Funktion `int_disp` in 'kernel/interrupts/mod.rs`  aufgerufen.In folgenden Dateien muss Code implementiert werden: `kernel/interrupts/pic.rs`,`devices/keyboard.rs`, `startup.rs` und `kernel/interrupts/int_dispatcher.rs`.
-
-*Allgemeine Hinweise:*- *Während der Behandlung einer Unterbrechung braucht man sich um unerwünschte Interrupts nicht zu sorgen. Der Prozessor schaltet diese nämlich automatisch aus, wenn er mit der Behandlung beginnt, und lässt sie erst wieder zu, wenn die Unterbrechungsbehandlung beendet wird. Zudem nutzen wir nur einen Prozessor-Kern.*- *Die Interrupt-Verarbeitung kann nur funktionieren, wenn HHUos auch läuft. Sobald HHUos die main-Funktion verlässt, ist das Verhalten bei Auftreten eines Interrupts undefiniert. Ein Betriebssystem sollte eben nicht plötzlich enden :-)*
+1. Auffrischen der Assemblerkenntnisse
+2. Verständnis der Abläufe bei einem Koroutinen-Wechsel
+3. Unterschied zwischen Threads und Koroutinen
+3. Verstehen wie ein Scheduler funktioniert
 
 
-**Beispielausgaben in** `int_disp`
+## A4.1: Koroutinen
+In dieser Aufgabe soll die Umschaltung zwischen Koroutinen in Assembler programmiert werden. Koroutinen sind eine Vorstufe zu Threads die später (siehe unten) zusätzlich eingeführt werden. 
 
-![IRQ1](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-3/img/irq1.jpg)
+Sehen Sie sich zunächst die Inhalte der neuen Dateien in der Vorgabe im Ordner `kernel/corouts` an und implementieren Sie die beiden Assemblerfunktionen `coroutine_start` und `coroutine_switch` in `coroutine.asm`. Der Zustand (alle Register) einer Koroutine soll auf dem Stack gesichert werden. Das `rflags`-Register kann nicht direkt per move-Befehl zugegriffen werden, sondern nur mithilfe der Instruktionen `popf` und `pushf`. 
 
-## A3.2: Weiterleitung von Interrupts an die Geräte-Treiber
-In dieser Aufgabe soll eine Infrastruktur geschaffen werden, um Interrupts, welche in `int_disp` (siehe Aufgabe A3.1) entgegengenommen werden, an eine Interrupt-Service-Routine (ISR) in einem Treiber weiterzuleiten.
-Ein Treiber muss hierfür eine ISR implementieren und registrieren. Die Schnittstelle der ISR besteht „nur“ aus der `trigger`-Funktion. Zu beachten ist, dass der Interrupt-Dispatcher mit Vektor-Nummern arbeitet und nicht IRQ-Nummern wie der PIC.
+Der Zeiger auf den letzten Stack-Eintrag soll in der Instanzvariablen `context` in der Klasse `Coroutine` gespeichert werden.
 
-Zur Verwaltung der ISR verwendet das Modul `intdispatcher` die dynamische Datenstruktur `Vec`,welche mit 256 Default-ISRs (Funktionsobjekte) initialisiert wird. Dies erlaubt es in `assign` eine ISR eines Treibers (Schnittstelle definiert in `isr`) an einem gegebenen Index zu speichern. Leider geht dies in Rust nicht mit einem Array statischer Größe. 
+Ergänzen Sie anschließend die leeren Methoden in `Coroutine.cc`. Die Verkettung der Koroutinen erfolgt mit der Klasse `lib/Chain`.
 
-Die Funktion `report` soll von `int_disp` gerufen werden, um die Funktion trigger einer registrierten isr-Funktion aufrufen, sofern vorhanden. Falls keine ISR registriert wurde, also nur der Default-Handler eingetragen ist, so soll eine Fehlermeldung ausgegeben werden und das System gestoppt werden.
-Im Modul `keyboard` soll die Funktion `plugin` eine Referenz auf ein Funktionsobjekt `KeyboardISR`, mithilfe von `assign` (im Modul `intdispatcher`) registrieren. Die für die Tastatur notwendige Vektor-Nummer ist in `intdispatcher` definiert. Zudem muss der IRQ der Tastatur (definiert in `pic.rs`) im PIC mithilfe von `allow` freigeschaltet werden.
-Des Weiteren soll eine Text-Ausgabe in die Funktion `trigger` eingebaut werden, um zu prüfen, ob die Tastaturinterrupts hier ankommen.
-Für Textausgaben in einem Interrupt (in `int_disp` und registrierten ISRs) sollten nicht die üblichen Makros `print!` und `println!` von Rust verwendet werden, sondern direkt auf das Modul `cga` zugegriffen werden. Der Hintergrund wurde in A.3.1 beschrieben.
+Schreiben Sie für Ihre Koroutinen-Implementierung folgendes Testprogramm. Im Verzeichnis
+`user` der Vorgabe finden Sie hierfür Dateien. Es sollen drei Koroutinen erzeugt und miteinander
+verkettet werden. Jede Koroutine soll einen Zähler hochzählen und an einer festen Position auf dem Bildschirm ausgeben und dann auf die nächste Koroutine umschalten. Durch die Verkettung werden die drei Koroutinen dann reihum abwechselnd ausgeführt, wodurch die Zähler scheinbar nebenläufig vorangetrieben werden, siehe nachstehende Abbildung.
 
-In folgenden Dateien muss Code implementiert werden: `kernel/interrupts/pic.rs`,`devices/keyboard.rs`, `startup.rs`, und `kernel/interrupts/intdispatcher.rs`.
+In folgenden Dateien muss Code implementiert werden: `kernel/corouts/Coroutine.asm`, `kernel/corouts/Coroutine.cc`, `user/aufgabe4/CoroutineDemo.cc`, `user/aufgabe4/CoroutineLoop.cc`
 
-**Beispielausgaben in** `Keyboard::trigger`
-
-![IRQ2](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-3/img/irq2.jpg)
+Hinweis: Schauen Sie sich vor dem Programmieren der Assemblerfunktionen nochmals die Aufrufkonvention für die Parameterübergabe an.
 
 
-## A3.3: Tastaturabfrage per Interrupt
-Nun soll die Funktion `trigger` in Keyboard implementiert werden und mithilfe von `key_hit` bei jedem Tastendruck das entsprechende Zeichen an einer festen Position auf dem Bildschirm dargestellt werden. Die Ausgabe des Zeichens soll direkt in `trigger` erfolgen.
-Der ASCII-Code der zuletzt gedrückten Taste soll zudem in der neuen Variable `lastkey` gespeichert werden, welche später von Anwendungen ausgelesen werden kann. In `lib/Input.cc` sind zwei Beispielfunktionen welche `lastkey` verwenden, beispielsweise warten bis der Benutzer die Taste Return gedrückt hat.*Hinweise:*- *Die PS/2-Maus hängt ebenfalls am Keyboard-Controller, verwendet aber IRQ12. Da wir keinen Handler für IRQ12 haben, kann es sein, dass wenn IRQ1 auftritt noch Daten von der Maus abzuholen sind. Dies können Sie anhand des* `AUXB`*-Bits im Statusregister erkennen.*- *Ferner tritt unter Qemu manchmal direkt ein IRQ1 nach dem Start auf, ohne eine Tastatureingabe. Das ist auf echter Hardware nicht der Fall. Daher unter Qemu bitte ignorieren.*
+**Beispielausgaben der Koroutinen**
 
-**Beispielausgaben in** `Keyboard::trigger` **an einer festen Position**
+![KOR1](https://github.com/mschoett/hhuTOSc/blob/aufgabe-4/img/corouts.jpg)
 
-![IRQ3](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-3/img/irq3.jpg)
+(In eckigen Klammern wird die Koroutinen-ID angezeigt.)
 
 
-## A3.4: kritische Abschnitte
-Hier soll ein Testprogramm in geschrieben werden. Dieses soll in einer Endlosschleife an einer festen Position Ausgaben machen. Zum Beispiel zeilenweise die Zahlen 0-9.
-Es sollte nun möglich sein, durch das Drücken von Tasten die Ausgabe "durcheinander" bringen zu können. Was passiert hier? Wie kann dies vermieden werden?*Tipp: Für die Synchronisierung / Implementierung eines kritischen Abschnitts gibt es nützliche Funktionen in der Klasse* `CPU`.
+## A4.2: Warteschlange
+Der Scheduler benötigt eine Warteschlange (engl. queue) bei der immer am Anfang einer einfach verketteten Liste ein Element entfernt wird (Thread der als nächstes die CPU erhält) und immer Ende eingefügt wird (zum Beispiel ein neuer Thread oder ein Thread der die CPU abgibt).
 
-**Beispielausgaben "Durcheinander" ohne Synchronisierung**
+Implementieren Sie eine Warteschlange die diese Funktionalität realisiert im Verzeichnis `lib`. Testen Sie diese Klasse bevor Sie die nächste Aufgabe beginnen mit einem eigenen Testprogramm, außerhalb des Betriebssystems.
 
-![IRQ4](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-3/img/irq4.jpg)
+In folgender Datei muss Code implementiert werden: `lib/Queue.cc`.
 
 
+## A4.3: Umbau der Koroutinen auf Threads
+Kopieren Sie das Unterverzeichnis `kernel/corouts` um nach `kernel/threads` und benennen Sie danach die Dateien im Verzeichnis `kernel/threads` wie folgt um. Passen Sie dann die Namen der Klassen, Konstruktoren, Methoden und Funktionen in den obigen Dateien entsprechend an und ersetzen den Namen *Coroutine* durch den Namen *Thread*.
+
+Umzukopieren sind folgende Dateien:
+- Coroutine.asm -> Thread.asm 
+- Coroutine.cc  -> Thread.cc
+
+Modifizieren Sie nun `Thread.cc` passend zur der Datei `Thread.h` in der Vorgabe. 
+- Die Methode `setNext` soll gelöscht werden.
+- Die Methode `switchToNext` soll durch `switchTo` (siehe Vorgabe `Thread.h`) ersetzt werden. Die Semantik bleibt gleich, aber die Threads sind nicht fest miteinander verkettet, wie die Koroutinen. Daher wird der nächste Thread in `next` als Parameter übergeben.
+- Im Konstruktor soll eine eindeutige Thread-ID vergeben werden, dies kann mithilfe einer globalen Variablen in `Thread.cc` realisiert werden. Zudem soll im Konstruktor der Stack (4 KB sind ausreichend) mithilfe ihrer Speicherverwaltung dynamisch angelegt werden.
+
+*Hinweis: Diese Aufgabe kann nicht separat getestet werden.*
+
+
+## A4.4 Scheduler
+Nun soll ein einfacher Scheduler implementiert werden. Alle Threads werden in einer Bereit-Wartschlange (siehe A4.2) verwaltet und bekommen reihum die CPU (nach freiwilliger Abgabe mittels `yield`). Es gibt keine Prioritäten und es ist sinnvoll, dass der aktuell laufende Thread nicht in der Warteschlange gespeichert wird. In der Vorgabe ist die Implementierung für den Idle-Thread gegeben, welcher läuft, falls kein Anwendungsthread in der Bereit-Warteschlange ist. Der Idle-Thread soll im Rahmen der Initialisierung des Schedulers erzeugt und registriert werden, siehe A4.5. 
+
+Testen Sie den Scheduler zunächst nur mit dem Idle-Thread. Bauen Sie hierzu eine Textausgabe in den Idle-Thread ein.
+
+Gegeben ist in der Vorgabe die Klasse `Dispatcher`. Hier wird der aktuell laufende Thread verwaltet, sowie das Umschalten auf einen anderen Thread mithilfe der `switchTo`-Methode der Klasse `Thread` realisiert. In der Klasse `Dispatcher` ist auch eine Methode `start` zum Anstoßen des ersten Threads (mithilfe ihrer Assembler-Funktion).
+
+In der gegebenen Datei `Scheduler.cc` sind die gekennzeichneten Methoden zu implementieren. Bei
+einem Thread-Wechsel soll der Thread am Kopf der `readyQueue` entfernt und durch `life` (in
+`Disptacher.cc`) referenziert. Gibt ein Thread die CPU freiwillig durch Aufruf von `yield` ab, soll dieser Thread wird wieder am Ende der `readyQueue` eingefügt werden.
+
+
+## A4.5 Eine multi-threaded Testanwendung
+Die Vorgabe beinhaltet einen HelloWorld-Thread, um einen ersten Test durchzuführen. Der Thread gibt einen Spruch aus und terminiert sich dann. Anschließend soll nur noch der Idle-Thread ausgeführt werden. Um dies zu testen soll der Idle-Thread und der HelloWorld-Thread in `main` angelegt und im Scheduler registriert werden. Anschließend soll der Scheduler mit `scheduler.schedule()` gestartet werden.
+
+Als zweiter eigener Test soll nun eine multi-threaded Testanwendung bestehend aus vier Threads geschrieben werden. Hierzu soll das Anwendungsbeispiel mit den drei Zählern vom letzten Übungsblatt von Koroutinen auf Threads umgebaut werden. Ein Haupt-Thread der Anwendung `CoopThreadDemo` erzeugt drei Zähler-Threads, Instanzen von der Klasse `LoopThread`. Der Haupt-Thread der Anwendung soll eine gewisse Zeit laufen und sich dann selbst mit exit terminieren, nachdem er beispielsweise 1000 Mal die CPU bekommen hat. Bevor sich der Haupt-Thread der Anwendung terminiert soll er noch einen `LoopThread` mit `kill` terminieren. Somit sollten zunächst drei Zähler auf dem Bildschirm ausgegeben werden und dann einer bei 1000 stoppen, siehe Abbildung unten.
+
+**Beispielausgaben der Threads**
+
+![THR](https://github.com/mschoett/hhuTOSc/blob/aufgabe-4/img/threads.jpg)

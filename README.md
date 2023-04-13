@@ -26,7 +26,8 @@ Hinweis: Schauen Sie sich vor dem Programmieren der Assemblerfunktionen nochmals
 
 **Beispielausgaben der Koroutinen**
 
-![KOR1](https://github.com/mschoett/hhuTOSr/blob/aufgabe-4/img/corouts.jpg)
+![KOR1](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-4/img/corouts.jpg)
+
 
 (In eckigen Klammern wird die Koroutinen-ID angezeigt.)
 
@@ -64,4 +65,4 @@ Als zweiter eigener Test soll nun eine multi-threaded Testanwendung bestehend au
 
 **Beispielausgaben der Threads**
 
-![THR](https://github.com/mschoett/hhuTOSr/blob/aufgabe-4/img/threads.jpg)
+![THR](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-4/img/threads.jpg)

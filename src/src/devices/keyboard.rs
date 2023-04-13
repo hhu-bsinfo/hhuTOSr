@@ -63,34 +63,6 @@ impl Keyboard {
 	}
 
 
-   fn key_hit(&mut self) -> key::Key {
-      let invalid: key::Key = Default::default();  // nicht explizit initialisierte Tasten sind ungueltig
-      let mut control: u8;
-
-      self.lastkey = NO_KEY;
-          
-      // warten bis ein Byte abholbereit ist
-      loop {
-         control = cpu::inb(KBD_CTRL_PORT);
-         if (control & KBD_OUTB) != 0 {
-			 break;
-         }
-      }     
-
-      // Byte einlesen
-      self.code = cpu::inb(KBD_DATA_PORT);
-    
-      // Auch eine evtl. angeschlossene PS/2 Maus liefert ihre Daten ueber den
-      // Tastaturcontroller. In diesem Fall ist zur Kennzeichnung das AUXB-Bit
-      // gesetzt.
-      if (control & KBD_AUXB)==0 && self.key_decoded()==true {
-         return self.gather;
-      }
-      
-      return invalid;
-   }
-   
-   
    /*****************************************************************************
     * Funktion:        plugin                                                   *
     *---------------------------------------------------------------------------*

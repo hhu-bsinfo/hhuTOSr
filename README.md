@@ -14,20 +14,19 @@ Sehen Sie sich zunächst die Inhalte der neuen Dateien in der Vorgabe im Ordner 
 
 Der Zeiger auf den letzten Stack-Eintrag soll in der Instanzvariablen `context` in der Klasse `Coroutine` gespeichert werden.
 
-Ergänzen Sie anschließend die leeren Methoden in `Coroutine.cc`. Die Verkettung der Koroutinen erfolgt mit der Klasse `lib/Chain`.
+Ergänzen Sie anschließend die leeren Methoden in `coroutine.rs`. Die Verkettung der Koroutinen erfolgt über `next` in der `struct Coroutine`.
 
 Schreiben Sie für Ihre Koroutinen-Implementierung folgendes Testprogramm. Im Verzeichnis
-`user` der Vorgabe finden Sie hierfür Dateien. Es sollen drei Koroutinen erzeugt und miteinander
-verkettet werden. Jede Koroutine soll einen Zähler hochzählen und an einer festen Position auf dem Bildschirm ausgeben und dann auf die nächste Koroutine umschalten. Durch die Verkettung werden die drei Koroutinen dann reihum abwechselnd ausgeführt, wodurch die Zähler scheinbar nebenläufig vorangetrieben werden, siehe nachstehende Abbildung.
+`user/aufgabe4` der Vorgabe finden Sie hierfür Dateien. Es sollen drei Koroutinen erzeugt und miteinander verkettet werden. Jede Koroutine soll einen Zähler hochzählen und an einer festen Position auf dem Bildschirm ausgeben und dann auf die nächste Koroutine umschalten. Durch die Verkettung werden die drei Koroutinen dann reihum abwechselnd ausgeführt, wodurch die Zähler scheinbar nebenläufig vorangetrieben werden, siehe nachstehende Abbildung.
 
-In folgenden Dateien muss Code implementiert werden: `kernel/corouts/Coroutine.asm`, `kernel/corouts/Coroutine.cc`, `user/aufgabe4/CoroutineDemo.cc`, `user/aufgabe4/CoroutineLoop.cc`
+In folgenden Dateien muss Code implementiert werden: `kernel/corouts/coroutine.asm`, `kernel/corouts/coroutine.rs`, `user/aufgabe4/corouts_demo.cc` und `startup.rs`.
 
 Hinweis: Schauen Sie sich vor dem Programmieren der Assemblerfunktionen nochmals die Aufrufkonvention für die Parameterübergabe an.
 
 
 **Beispielausgaben der Koroutinen**
 
-![KOR1](https://github.com/mschoett/hhuTOSc/blob/aufgabe-4/img/corouts.jpg)
+![KOR1](https://github.com/mschoett/hhuTOSr/blob/aufgabe-4/img/corouts.jpg)
 
 (In eckigen Klammern wird die Koroutinen-ID angezeigt.)
 
@@ -35,9 +34,8 @@ Hinweis: Schauen Sie sich vor dem Programmieren der Assemblerfunktionen nochmals
 ## A4.2: Warteschlange
 Der Scheduler benötigt eine Warteschlange (engl. queue) bei der immer am Anfang einer einfach verketteten Liste ein Element entfernt wird (Thread der als nächstes die CPU erhält) und immer Ende eingefügt wird (zum Beispiel ein neuer Thread oder ein Thread der die CPU abgibt).
 
-Implementieren Sie eine Warteschlange die diese Funktionalität realisiert im Verzeichnis `lib`. Testen Sie diese Klasse bevor Sie die nächste Aufgabe beginnen mit einem eigenen Testprogramm, außerhalb des Betriebssystems.
-
-In folgender Datei muss Code implementiert werden: `lib/Queue.cc`.
+In Rust ist die Implementierung einer verketteten Liste anspruchsvoll, weswegen „nur“ die Funktion `remove` implementiert werden muss. Es empfiehlt sich die Listenimplementierung zunächst außerhalb von hhuTOSr zu testen.
+In folgender Datei muss Code implementiert werden: `mylib/queue.rs`.
 
 
 ## A4.3: Umbau der Koroutinen auf Threads

@@ -70,40 +70,9 @@ impl<T: PartialEq> Queue<T> {
     // Rueckgabewert: true:  falls das Element gefunden und geloescht wurde
     //                false: sonst
     pub fn remove(&mut self, data: T) -> bool {
-        // Ist die Liste leer?
-    	let headptr = self.head.clone();
-	    if let Some(h) = headptr {
-    		
-           // Muss der Kopf geloescht werden? (Sonderfall)
-           if h.borrow().data == data {
-			  self.head = h.borrow().next.clone();
-			  return true
-		   }
-		
-		   // Muss ein anderer Knoten geloescht werden?
-   		   let mut curr = self.head.clone();
-		   loop {
-		
-              if let Some(current) = curr {
-				 
-				 // Pruefen, ob der Nachfolger geloescht werden soll
-    	         let n = current.borrow().next.clone();
-    	         if let Some(nxt) = n {
-                    if nxt.borrow().data == data {
-					   current.borrow_mut().next = nxt.borrow().next.clone();
-					   return true
-				    }
-			     }
-			  
-			     // 'curr' neu setzen, fuer naechsten Schleifendurchlauf
-			     curr = current.borrow().next.clone(); 
-		       }
-		       else {
-			      break;
-		       }
-           }
-	    }
-	    return false
+
+       /* Hier muss Code eingefuegt werden */
+
    }
 
 }

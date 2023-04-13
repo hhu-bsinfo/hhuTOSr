@@ -11,7 +11,8 @@ path = "src/startup.rs"
 [dependencies]
 spin = "0.5.2"
 x86_64 = "0.14.2"
-
+rlibc = "1.0.0"
+tinyrlibc = "0.3.0"
 
 [dependencies.lazy_static]
 version = "1.0"

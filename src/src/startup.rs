@@ -1,20 +1,22 @@
 #![feature(lang_items)]
 #![feature(ptr_internals)]
 #![feature(const_mut_refs)]
-#![no_std]
 #![allow(dead_code)]          // avoid warnings 
 #![allow(unused_variables)]   // avoid warnings 
 #![allow(unused_imports)]
 #![allow(unused_macros)]
+#![feature(restricted_std)]
 
 extern crate spin; // we need a mutex in devices::cga_print
+extern crate std; // standard lib
+extern crate tinyrlibc; // ensure we have 'strlen', needed to build 'std'
+extern crate rlibc; // ensure we have compiler-builtin-funcs, needed to build 'std'
 
 
 // insert other modules
 #[macro_use]   // import macros, too
 mod devices;
 mod kernel;
-mod lib;
 mod user;
 mod consts;
 

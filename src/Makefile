@@ -3,7 +3,7 @@
 #*                  Daten auf dem spezifizierten Laufwerk verloren gehen!    *
 #*                  Nicht mit root-Rechten ausfuehren!                       *
 #*                                                                           *
-#* Autor:           Michael Schoettner, HHU, 13.04.2023                      *
+#* Autor:           Michael Schoettner, HHU, 12.03.2023                      *
 #*****************************************************************************/
 BOOTDRIVE = /dev/sdb
 
@@ -50,7 +50,7 @@ $(OBJDIR)/_%.o : %.asm
 # --------------------------------------------------------------------------
 # Regeln zum Compilieren der Rust-Dateien 
 rust_objs:
-	@RUST_TARGET_PATH=$(shell pwd) xargo build --target $(TARGET)
+	@RUST_TARGET_PATH=$(shell pwd) xargo build -Z build-std=std,panic_abort --target $(TARGET)
 
 # --------------------------------------------------------------------------
 # System binden

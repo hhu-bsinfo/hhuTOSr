@@ -42,13 +42,10 @@ In Rust ist die Implementierung einer verketteten Liste anspruchsvoll, weswegen 
 Kopieren Sie das Unterverzeichnis `kernel/corouts` um nach `kernel/threads` und benennen Sie danach die Dateien im Verzeichnis `kernel/threads` wie folgt um. Passen Sie dann die Namen der Klassen, Konstruktoren, Methoden und Funktionen in den obigen Dateien entsprechend an und ersetzen den Namen *Coroutine* durch den Namen *Thread*.
 
 Umzukopieren sind folgende Dateien:
-- Coroutine.asm -> Thread.asm 
-- Coroutine.cc  -> Thread.cc
+- coroutine.asm -> thread.asm 
+- stack.rs -> stack.rs
 
-Modifizieren Sie nun `Thread.cc` passend zur der Datei `Thread.h` in der Vorgabe. 
-- Die Methode `setNext` soll gelöscht werden.
-- Die Methode `switchToNext` soll durch `switchTo` (siehe Vorgabe `Thread.h`) ersetzt werden. Die Semantik bleibt gleich, aber die Threads sind nicht fest miteinander verkettet, wie die Koroutinen. Daher wird der nächste Thread in `next` als Parameter übergeben.
-- Im Konstruktor soll eine eindeutige Thread-ID vergeben werden, dies kann mithilfe einer globalen Variablen in `Thread.cc` realisiert werden. Zudem soll im Konstruktor der Stack (4 KB sind ausreichend) mithilfe ihrer Speicherverwaltung dynamisch angelegt werden.
+Vergleichen Sie die Änderungen in `thread.rs` gegenüber `coroutine.rs`. Insbesondere ist `next` nicht in `struct Thread`, da die Threads nun in der Queue aus Aufgabe A4.2 verwaltet werden sollen und nicht wie die Koroutinen direkt verkettet sind.
 
 *Hinweis: Diese Aufgabe kann nicht separat getestet werden.*
 
@@ -58,18 +55,13 @@ Nun soll ein einfacher Scheduler implementiert werden. Alle Threads werden in ei
 
 Testen Sie den Scheduler zunächst nur mit dem Idle-Thread. Bauen Sie hierzu eine Textausgabe in den Idle-Thread ein.
 
-Gegeben ist in der Vorgabe die Klasse `Dispatcher`. Hier wird der aktuell laufende Thread verwaltet, sowie das Umschalten auf einen anderen Thread mithilfe der `switchTo`-Methode der Klasse `Thread` realisiert. In der Klasse `Dispatcher` ist auch eine Methode `start` zum Anstoßen des ersten Threads (mithilfe ihrer Assembler-Funktion).
-
-In der gegebenen Datei `Scheduler.cc` sind die gekennzeichneten Methoden zu implementieren. Bei
-einem Thread-Wechsel soll der Thread am Kopf der `readyQueue` entfernt und durch `life` (in
-`Disptacher.cc`) referenziert. Gibt ein Thread die CPU freiwillig durch Aufruf von `yield` ab, soll dieser Thread wird wieder am Ende der `readyQueue` eingefügt werden.
-
+In der gegebenen Datei `scheduler.rs` sind die gekennzeichneten Funktionn zu implementieren. Beieinem Thread-Wechsel soll der Thread am Kopf der `readyQueue` entfernt werden. Gibt der laufendeThread die CPU freiwillig durch Aufruf von `yield` ab, soll dieser Thread wird wieder am Ende der`readyQueue` eingefügt werden. Da die CPU nicht entzogen werden kann, merken wir uns den aktuelllaufenden Thread nicht in einer zusätzlichen Referenz (wie bei der C++ Lösung). Dies ist im Moment nicht notwendig.
 
 ## A4.5 Eine multi-threaded Testanwendung
-Die Vorgabe beinhaltet einen HelloWorld-Thread, um einen ersten Test durchzuführen. Der Thread gibt einen Spruch aus und terminiert sich dann. Anschließend soll nur noch der Idle-Thread ausgeführt werden. Um dies zu testen soll der Idle-Thread und der HelloWorld-Thread in `main` angelegt und im Scheduler registriert werden. Anschließend soll der Scheduler mit `scheduler.schedule()` gestartet werden.
+Die Vorgabe beinhaltet einen HelloWorld-Thread (`user/aufgabe4/hello_world_thread.rs`), um einen ersten Test durchzuführen. Der Thread gibt einen Spruch aus und terminiert sich dann. Anschließend soll nur noch der Idle-Thread ausgeführt werden. Um dies zu testen soll der Idle-Thread und der HelloWorld-Thread in `main` angelegt und im Scheduler registriert werden. Anschließend soll der Scheduler mit `scheduler::Scheduler::schedule()` gestartet werden.
 
-Als zweiter eigener Test soll nun eine multi-threaded Testanwendung bestehend aus vier Threads geschrieben werden. Hierzu soll das Anwendungsbeispiel mit den drei Zählern vom letzten Übungsblatt von Koroutinen auf Threads umgebaut werden. Ein Haupt-Thread der Anwendung `CoopThreadDemo` erzeugt drei Zähler-Threads, Instanzen von der Klasse `LoopThread`. Der Haupt-Thread der Anwendung soll eine gewisse Zeit laufen und sich dann selbst mit exit terminieren, nachdem er beispielsweise 1000 Mal die CPU bekommen hat. Bevor sich der Haupt-Thread der Anwendung terminiert soll er noch einen `LoopThread` mit `kill` terminieren. Somit sollten zunächst drei Zähler auf dem Bildschirm ausgegeben werden und dann einer bei 1000 stoppen, siehe Abbildung unten.
+Als zweiter eigener Test soll nun eine multi-threaded Testanwendung bestehend aus vier Threads geschrieben werden. Hierzu soll das Anwendungsbeispiel mit den drei Zählern vom letzten Übungsblatt von Koroutinen auf Threads umgebaut werden. Ein Haupt-Thread der Anwendung `coop_thread_demo` erzeugt drei Zähler-Threads `coop_thread_loop`. Der Haupt-Thread der Anwendung soll eine gewisse Zeit laufen und sich dann selbst mit `exit` terminieren, nachdem er beispielsweise 1000 Mal die CPU mit `yield` abgegeben hat. Bevor sich der Haupt-Thread der Anwendung terminiert soll er noch einen `coop_thread_loop` mit `kill` terminieren. Somit sollten zunächst drei Zähler auf dem Bildschirm ausgegeben werden und dann einer bei 1000 stoppen, siehe Abbildung unten.
 
 **Beispielausgaben der Threads**
 
-![THR](https://github.com/mschoett/hhuTOSc/blob/aufgabe-4/img/threads.jpg)
+![THR](https://github.com/mschoett/hhuTOSr/blob/aufgabe-4/img/threads.jpg)

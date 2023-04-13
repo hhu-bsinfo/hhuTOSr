@@ -18,8 +18,7 @@ In der Datei `intdispatcher.rs` soll in der Funktion `int_disp` eine Textausgabe
 
 **Beispielausgaben in** `int_disp`
 
-![IRQ1](https://github.com/mschoett/hhuTOSr/blob/aufgabe-3/img/irq1.jpg)
-
+![IRQ1](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-3/img/irq1.jpg)
 
 ## A3.2: Weiterleitung von Interrupts an die Geräte-Treiber
 In dieser Aufgabe soll eine Infrastruktur geschaffen werden, um Interrupts, welche in `int_disp` (siehe Aufgabe A3.1) entgegengenommen werden, an eine Interrupt-Service-Routine (ISR) in einem Treiber weiterzuleiten.
@@ -36,7 +35,7 @@ In folgenden Dateien muss Code implementiert werden: `kernel/interrupts/pic.rs`,
 
 **Beispielausgaben in** `Keyboard::trigger`
 
-![IRQ2](https://github.com/mschoett/hhuTOSr/blob/aufgabe-3/img/irq2.jpg)
+![IRQ2](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-3/img/irq2.jpg)
 
 
 ## A3.3: Tastaturabfrage per Interrupt
@@ -45,7 +44,7 @@ Nun soll die Funktion `trigger` in Keyboard implementiert werden und mithilfe vo
 
 **Beispielausgaben in** `Keyboard::trigger` **an einer festen Position**
 
-![IRQ3](https://github.com/mschoett/hhuTOSr/blob/aufgabe-3/img/irq3.jpg)
+![IRQ3](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-3/img/irq3.jpg)
 
 
 ## A3.4: kritische Abschnitte
@@ -54,6 +53,6 @@ Hier soll ein Testprogramm in geschrieben werden. Dieses soll in einer Endlossch
 
 **Beispielausgaben "Durcheinander" ohne Synchronisierung**
 
-![IRQ4](https://github.com/mschoett/hhuTOSr/blob/aufgabe-3/img/irq4.jpg)
+![IRQ4](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-3/img/irq4.jpg)
 
 

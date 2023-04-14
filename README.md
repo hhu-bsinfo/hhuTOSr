@@ -1,4 +1,4 @@
-# Aufgabe 4: Koroutinen und Threads
+# Aufgabe 5: Preemptives Multithreading
 
 ## Lernziele
 1. Auffrischen der Assemblerkenntnisse
@@ -36,7 +36,8 @@ Hinweis: Schauen Sie sich vor dem Programmieren der Assemblerfunktionen nochmals
 Der Scheduler benötigt eine Warteschlange (engl. queue) bei der immer am Anfang einer einfach verketteten Liste ein Element entfernt wird (Thread der als nächstes die CPU erhält) und immer Ende eingefügt wird (zum Beispiel ein neuer Thread oder ein Thread der die CPU abgibt).
 
 In Rust ist die Implementierung einer verketteten Liste anspruchsvoll, weswegen „nur“ die Funktion `remove` implementiert werden muss. Es empfiehlt sich die Listenimplementierung zunächst außerhalb von hhuTOSr zu testen.
-In folgender Datei muss Code implementiert werden: `mylib/queue.rs`.
+
+In folgender Datei muss Code implementiert werden: `mylib/queue.rs`.
 
 
 ## A4.3: Umbau der Koroutinen auf Threads
@@ -46,7 +47,8 @@ Umzukopieren sind folgende Dateien:
 - coroutine.asm -> thread.asm 
 - stack.rs -> stack.rs
 
-Vergleichen Sie die Änderungen in `thread.rs` gegenüber `coroutine.rs`. Insbesondere ist `next` nicht in `struct Thread`, da die Threads nun in der Queue aus Aufgabe A4.2 verwaltet werden sollen und nicht wie die Koroutinen direkt verkettet sind.
+Vergleichen Sie die Änderungen in `thread.rs` gegenüber `coroutine.rs`. Insbesondere ist `next` 
+nicht in `struct Thread`, da die Threads nun in der Queue aus Aufgabe A4.2 verwaltet werden sollen und nicht wie die Koroutinen direkt verkettet sind.
 
 *Hinweis: Diese Aufgabe kann nicht separat getestet werden.*
 
@@ -56,7 +58,11 @@ Nun soll ein einfacher Scheduler implementiert werden. Alle Threads werden in ei
 
 Testen Sie den Scheduler zunächst nur mit dem Idle-Thread. Bauen Sie hierzu eine Textausgabe in den Idle-Thread ein.
 
-In der gegebenen Datei `scheduler.rs` sind die gekennzeichneten Funktionn zu implementieren. Beieinem Thread-Wechsel soll der Thread am Kopf der `readyQueue` entfernt werden. Gibt der laufendeThread die CPU freiwillig durch Aufruf von `yield` ab, soll dieser Thread wird wieder am Ende der`readyQueue` eingefügt werden. Da die CPU nicht entzogen werden kann, merken wir uns den aktuelllaufenden Thread nicht in einer zusätzlichen Referenz (wie bei der C++ Lösung). Dies ist im Moment nicht notwendig.
+In der gegebenen Datei `scheduler.rs` sind die gekennzeichneten Funktionn zu implementieren. Bei
+einem Thread-Wechsel soll der Thread am Kopf der `readyQueue` entfernt werden. Gibt der laufende
+Thread die CPU freiwillig durch Aufruf von `yield` ab, soll dieser Thread wird wieder am Ende der
+`readyQueue` eingefügt werden. Da die CPU nicht entzogen werden kann, merken wir uns den aktuell
+laufenden Thread nicht in einer zusätzlichen Referenz (wie bei der C++ Lösung). Dies ist im Moment nicht notwendig.
 
 ## A4.5 Eine multi-threaded Testanwendung
 Die Vorgabe beinhaltet einen HelloWorld-Thread (`user/aufgabe4/hello_world_thread.rs`), um einen ersten Test durchzuführen. Der Thread gibt einen Spruch aus und terminiert sich dann. Anschließend soll nur noch der Idle-Thread ausgeführt werden. Um dies zu testen soll der Idle-Thread und der HelloWorld-Thread in `main` angelegt und im Scheduler registriert werden. Anschließend soll der Scheduler mit `scheduler::Scheduler::schedule()` gestartet werden.

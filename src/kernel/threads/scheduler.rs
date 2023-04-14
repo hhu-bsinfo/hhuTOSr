@@ -46,7 +46,12 @@ impl Scheduler {
    }
    
    
-   // Scheduler starten -> 1. Thread wird angestossen
+   /*****************************************************************************
+    * Funktion:        schedule                                                 *
+    *---------------------------------------------------------------------------*
+    * Beschreibung:    Scheduler starten. Wird nur einmalig gerufen und kehrt   *
+    *                  nicht mehr zurueck.                                      *
+    *****************************************************************************/
    pub fn schedule () {
       let to_start = SCHEDULER.lock().ready_queue.dequeue();
       if let Some(that) = to_start {
@@ -67,8 +72,17 @@ impl Scheduler {
    }
        
        
-   // Einen neuen Thread beim Scheduler registrieren
-   // Zurueckgegeben wird die TID des neuen Threads
+   /*****************************************************************************
+    * Funktion:        ready                                                    *
+    *---------------------------------------------------------------------------*
+    * Beschreibung:    Thread in readyQueue eintragen.                          *
+    *                                                                           *
+    * Parameter:                                                                *
+    *      that        Einzutragender Thread                                    *
+    *                                                                           *
+    * Rückgabewert:                                                             *
+    *      id          ID fuer den eingetragenen Thread                         *
+    *****************************************************************************/
    pub fn ready (that: Box<dyn thread::ThreadEntry> ) -> u64 {
       let tid = SCHEDULER.lock().get_next_tid();
       let thread_wrapper = thread::Thread::new(tid, that);
@@ -77,7 +91,13 @@ impl Scheduler {
    }
     
     
-   // Thread terminiert sich selbst
+   /*****************************************************************************
+    * Funktion:        exit                                                     *
+    *---------------------------------------------------------------------------*
+    * Beschreibung:    Thread ist fertig und terminiert sich selbst. Hier muss  *
+    *                  nur auf den naechsten Thread umgeschaltet werden. Der    * 
+    *                  aktuell laufende Thread ist nicht in der readyQueue.     *
+    *****************************************************************************/
    pub fn exit (that: *mut thread::Thread) {
 	  // Naechsten Thread aus der Ready-Queue holen
       let next = SCHEDULER.lock().ready_queue.dequeue();
@@ -104,14 +124,35 @@ impl Scheduler {
    }
 
 
-   // Thread mit 'Gewalt' terminieren
+   /*****************************************************************************
+    * Funktion:        kill                                                     *
+    *---------------------------------------------------------------------------*
+    * Beschreibung:    Thread mit 'Gewalt' terminieren. Er wird aus der         *
+    *                  readyQueue ausgetragen und wird dann nicht mehr aufge-   *
+    *                  rufen. Der Aufrufer dieser Methode muss ein anderer      *
+    *                  Thread sein.                                             *
+    *                                                                           *
+    * Parameter:                                                                *
+    *      that        Zu terminierender Thread                                 *
+    *****************************************************************************/
    pub fn kill (tokill_tid: u64) {
 
       /* Hier muss Code eingefuegt werden */
 
    }
 
-   // CPU freiwillig abgeben und Auswahl des naechsten Threads
+
+   /*****************************************************************************
+    * Funktion:        yield                                                    *
+    *---------------------------------------------------------------------------*
+    * Beschreibung:    CPU freiwillig abgeben und Auswahl des naechsten Threads.*
+    *                  Naechsten Thread aus der readyQueue holen, den aktuellen *
+    *                  aus der readyQueue austragen und auf den naechsten Thread*
+    *                  umschalten.                                              *
+    *                                                                           *
+    * Achtung:         Falls nur der Idle-Thread läuft, so ist die readyQueue   * 
+    *                  leer.                                                    *
+    *****************************************************************************/
    pub fn yield_cpu (that: *mut thread::Thread) {
 
       /* Hier muss Code eingefuegt werden */

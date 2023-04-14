@@ -25,9 +25,10 @@ use std::fmt;
 use std::fmt::Display;
 use alloc::{boxed::Box};
 
-use crate::devices::cga as cga;
-use crate::kernel::cpu as cpu;
-use crate::kernel::threads::stack as stack;
+use crate::consts;
+use crate::devices::cga;
+use crate::kernel::cpu;
+use crate::kernel::threads::stack;
 use crate::mylib::queue::Link;
 
 
@@ -60,7 +61,7 @@ impl Thread {
 
    // Koroutine anlegen (mit vorbereitetem Stack)
    pub fn new(mytid: u64, myentry: Box<dyn ThreadEntry>)-> Box<Thread> {
-      let mystack = stack::Stack::new(4096);
+      let mystack = stack::Stack::new(consts::STACK_SIZE);
       let mut threadobj =  Box::new( Thread{ tid: mytid, 
 		                                 context: 0, 
 		                                   stack: mystack, 

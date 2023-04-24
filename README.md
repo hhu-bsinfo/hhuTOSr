@@ -1,74 +1,43 @@
 # Aufgabe 5: Preemptives Multithreading
 
 ## Lernziele
-1. Auffrischen der Assemblerkenntnisse
-2. Verständnis der Abläufe bei einem Koroutinen-Wechsel
-3. Unterschied zwischen Threads und Koroutinen
-3. Verstehen wie ein Scheduler funktioniert
+1. Tieferes Verständnis von präemptiven Multitasking
+2. CPU-Entzug mithilfe des PIT
+3. Synchronisierung des Schedulers gegenüber dem PIT-Interrupt
 
 
-## A4.1: Koroutinen
-In dieser Aufgabe soll die Umschaltung zwischen Koroutinen in Assembler programmiert werden. Koroutinen sind eine Vorstufe zu Threads die später (siehe unten) zusätzlich eingeführt werden. 
+## A5.1: Programmable Interval Timer (PIT)
+Der PIT wird ab sofort verwendet, um eine Systemzeit sowie ein erzwungenes Umschalten zwischen Threads zu realisieren. Die Systemzeit wird in der globalen Variable `systime` (in `Globals.cc`) gespeichert und diese wird bei jedem Interrupt für den PIT inkrementiert. Verwenden Sie hierfür im PIT den Channel 0 und Modus 3 und laden Sie den Zähler mit einem passenden Wert, sodass der PIT alle 10ms ein Interrupt ausgelöst. Jeder Interrupt verursacht also eine Inkrementierung und entspricht einem Tick (10ms). Somit zeigt `systime` an, wie viele Ticks seit dem Beginn der Zeiterfassung
+vergangen sind. 
 
-Sehen Sie sich zunächst die Inhalte der neuen Dateien in der Vorgabe im Ordner `kernel/corouts` an und implementieren Sie die beiden Assemblerfunktionen `coroutine_start` und `coroutine_switch` in `coroutine.asm`. Der Zustand (alle Register) einer Koroutine soll auf dem Stack gesichert werden. Das `rflags`-Register kann nicht direkt per move-Befehl zugegriffen werden, sondern nur mithilfe der Instruktionen `popf` und `pushf`. 
+Geben Sie im Interrupt-Handler des PIT den Fortschritt der Systemzeit an einer festen Stelle aus, jedoch nicht bei jedem Tick, sondern nur alle 100 Ticks. Verwenden Sie hierfür beispielsweise die rechte obere Ecke und folgende Zeichen |, /, -, \, wobei das Zeichen bei jeder Ausgabe wechselt. Dadurch, dass ein Zeichenausgabe nur alle 100 Ticks erfolgt, ändert sich das Zeichen ungefähr jede Sekunde. 
 
-Der Zeiger auf den letzten Stack-Eintrag soll in der Instanzvariablen `context` in der Klasse `Coroutine` gespeichert werden.
+Testen Sie die Klasse PIT indem Sie die ISR für den PIT in `startup` aktivieren und die Ausgabe der Systemzeit überprüfen. Die Systemzeit (in Ticks) wird in `pit.rs` realisert. 
 
-Ergänzen Sie anschließend die leeren Methoden in `coroutine.rs`. Die Verkettung der Koroutinen erfolgt über `next` in der `struct Coroutine`.
+In folgenden Dateien muss Code implementiert werden: `devices/pit.rs` und `startup.rs`.
 
-Schreiben Sie für Ihre Koroutinen-Implementierung folgendes Testprogramm. Im Verzeichnis
-`user/aufgabe4` der Vorgabe finden Sie hierfür Dateien. Es sollen drei Koroutinen erzeugt und miteinander verkettet werden. Jede Koroutine soll einen Zähler hochzählen und an einer festen Position auf dem Bildschirm ausgeben und dann auf die nächste Koroutine umschalten. Durch die Verkettung werden die drei Koroutinen dann reihum abwechselnd ausgeführt, wodurch die Zähler scheinbar nebenläufig vorangetrieben werden, siehe nachstehende Abbildung.
+## A5.2: Umbau des Treibers für den PC-Lautsprecher
+Die `delay` Funktion im Treiber für den PC-Lautsprecher hat bisher den PIT direkt verwendet und soll nun die Systemzeit aus A5.1 nutzen. Hierzu soll eine Busy-Waiting-Schleife verwendet werden, welche stoppt, wenn die `systime` entsprechend der gewünschten Verzögerung fortgeschritten ist. Busy-Waiting ist nicht schön, aber durch das präemptive Multithreading akzeptabel. 
 
-In folgenden Dateien muss Code implementiert werden: `kernel/corouts/coroutine.asm`, `kernel/corouts/coroutine.rs`, `user/aufgabe4/corouts_demo.cc` und `startup.rs`.
+Testen Sie den Umbau mit einer der Melodien.
 
-Hinweis: Schauen Sie sich vor dem Programmieren der Assemblerfunktionen nochmals die Aufrufkonvention für die Parameterübergabe an.
-
-
-**Beispielausgaben der Koroutinen**
-
-![KOR1](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-4/img/corouts.jpg)
+In folgender Datei muss Code implementiert werden: `devices/pcspk.rs`.
 
 
-(In eckigen Klammern wird die Koroutinen-ID angezeigt.)
+## A5.3 Threadumschaltung mithilfe des PIT
+In der Vorgabe ist neu die Methode `preempt`in `Scheduler.cc`. Diese Methode soll bei jedem Tick aus der ISR vom PIT aufgerufen werden und eine erzwungene Threadumschaltung durchführen. Somit entspricht eine Zeitscheibe einem Tick. Das Umschalten kann mithilfe der Methode `dispatch`erfolgen, wie bisher bei `yield`. 
+
+Zusätzliche müssen die Methoden des Schedulers mithilfe von Interrupt-Sperren gegenüber dem PIT synchronisiert werden. Ansonsten kann es sein, dass die Ready-Queue kaputt geht, wenn in einem ungünstigen Augenblick `preempt`aufgerufen wird.
+
+Zudem muss sichergestellt werden, dass der Scheduler fertig initialisiert ist, bevor das erste Mal `preempt`versucht umzuschalten. Dies ist in der Vorgabe bereits realsierit. Der Idel-Thread setzt die Variable `initialized` auf `true`, sobald er erstmalig losläuft.
+
+In folgender Datei muss Code implementiert werden: `kernel/threads/scheduler.rs`.
 
 
-## A4.2: Warteschlange
-Der Scheduler benötigt eine Warteschlange (engl. queue) bei der immer am Anfang einer einfach verketteten Liste ein Element entfernt wird (Thread der als nächstes die CPU erhält) und immer Ende eingefügt wird (zum Beispiel ein neuer Thread oder ein Thread der die CPU abgibt).
-
-In Rust ist die Implementierung einer verketteten Liste anspruchsvoll, weswegen „nur“ die Funktion `remove` implementiert werden muss. Es empfiehlt sich die Listenimplementierung zunächst außerhalb von hhuTOSr zu testen.
-
-In folgender Datei muss Code implementiert werden: `mylib/queue.rs`.
+## A5.4: Testanwendung mit Multithreading
+Testen Sie das präemptive Multitasking indem Sie eine kleine Demo-Anwendung schreiben in der ein Zähler-Thread läuft, welcher einen Zähler inkrementiert und an einer festen Position auf dem Bildschirm ausgibt. Zusätzlich soll noch ein zweiter Thread erzeugt werden der eine Melodie abspielt. Neben diesen beiden Threads soll zusätzlich der Fortschritt der Systemzeit im Interrupt ausgegeben werden, siehe nachstehende Abbildung.
 
 
-## A4.3: Umbau der Koroutinen auf Threads
-Kopieren Sie das Unterverzeichnis `kernel/corouts` um nach `kernel/threads` und benennen Sie danach die Dateien im Verzeichnis `kernel/threads` wie folgt um. Passen Sie dann die Namen der Klassen, Konstruktoren, Methoden und Funktionen in den obigen Dateien entsprechend an und ersetzen den Namen *Coroutine* durch den Namen *Thread*.
+**Beispielausgab des Testprogramms**
 
-Umzukopieren sind folgende Dateien:
-- coroutine.asm -> thread.asm 
-- stack.rs -> stack.rs
-
-Vergleichen Sie die Änderungen in `thread.rs` gegenüber `coroutine.rs`. Insbesondere ist `next` 
-nicht in `struct Thread`, da die Threads nun in der Queue aus Aufgabe A4.2 verwaltet werden sollen und nicht wie die Koroutinen direkt verkettet sind.
-
-*Hinweis: Diese Aufgabe kann nicht separat getestet werden.*
-
-
-## A4.4 Scheduler
-Nun soll ein einfacher Scheduler implementiert werden. Alle Threads werden in einer Bereit-Wartschlange (siehe A4.2) verwaltet und bekommen reihum die CPU (nach freiwilliger Abgabe mittels `yield`). Es gibt keine Prioritäten und es ist sinnvoll, dass der aktuell laufende Thread nicht in der Warteschlange gespeichert wird. In der Vorgabe ist die Implementierung für den Idle-Thread gegeben, welcher läuft, falls kein Anwendungsthread in der Bereit-Warteschlange ist. Der Idle-Thread soll im Rahmen der Initialisierung des Schedulers erzeugt und registriert werden, siehe A4.5. 
-
-Testen Sie den Scheduler zunächst nur mit dem Idle-Thread. Bauen Sie hierzu eine Textausgabe in den Idle-Thread ein.
-
-In der gegebenen Datei `scheduler.rs` sind die gekennzeichneten Funktionn zu implementieren. Bei
-einem Thread-Wechsel soll der Thread am Kopf der `readyQueue` entfernt werden. Gibt der laufende
-Thread die CPU freiwillig durch Aufruf von `yield` ab, soll dieser Thread wird wieder am Ende der
-`readyQueue` eingefügt werden. Da die CPU nicht entzogen werden kann, merken wir uns den aktuell
-laufenden Thread nicht in einer zusätzlichen Referenz (wie bei der C++ Lösung). Dies ist im Moment nicht notwendig.
-
-## A4.5 Eine multi-threaded Testanwendung
-Die Vorgabe beinhaltet einen HelloWorld-Thread (`user/aufgabe4/hello_world_thread.rs`), um einen ersten Test durchzuführen. Der Thread gibt einen Spruch aus und terminiert sich dann. Anschließend soll nur noch der Idle-Thread ausgeführt werden. Um dies zu testen soll der Idle-Thread und der HelloWorld-Thread in `main` angelegt und im Scheduler registriert werden. Anschließend soll der Scheduler mit `scheduler::Scheduler::schedule()` gestartet werden.
-
-Als zweiter eigener Test soll nun eine multi-threaded Testanwendung bestehend aus vier Threads geschrieben werden. Hierzu soll das Anwendungsbeispiel mit den drei Zählern vom letzten Übungsblatt von Koroutinen auf Threads umgebaut werden. Ein Haupt-Thread der Anwendung `coop_thread_demo` erzeugt drei Zähler-Threads `coop_thread_loop`. Der Haupt-Thread der Anwendung soll eine gewisse Zeit laufen und sich dann selbst mit `exit` terminieren, nachdem er beispielsweise 1000 Mal die CPU mit `yield` abgegeben hat. Bevor sich der Haupt-Thread der Anwendung terminiert soll er noch einen `coop_thread_loop` mit `kill` terminieren. Somit sollten zunächst drei Zähler auf dem Bildschirm ausgegeben werden und dann einer bei 1000 stoppen, siehe Abbildung unten.
-
-**Beispielausgaben der Threads**
-
-![THR](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-4/img/threads.jpg)
+![MTHR](https://github.com/mschoett/hhuTOSr/blob/aufgabe-5/img/mthr.jpg)

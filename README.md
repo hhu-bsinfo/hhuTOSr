@@ -40,4 +40,4 @@ Testen Sie das präemptive Multitasking indem Sie eine kleine Demo-Anwendung sch
 
 **Beispielausgab des Testprogramms**
 
-![MTHR](https://github.com/mschoett/hhuTOSr/blob/aufgabe-5/img/mthr.jpg)
+![MTHR](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-5/img/mthr.jpg)

@@ -41,8 +41,8 @@ fn aufgabe1() {
 pub extern fn startup() {
 
 
-	//cga::clear();
-	
+	cga::clear();
+	keyboard::set_repeat_rate(0x1f, 0x01); // Windows standard
 
 
     aufgabe1();

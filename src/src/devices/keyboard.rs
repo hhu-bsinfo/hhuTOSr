@@ -20,7 +20,9 @@ pub fn key_hit() -> key::Key {
 	return KB.lock().key_hit();
 }
 
-
+pub fn set_repeat_rate(speed: u8, delay: u8) {
+    KB.lock().set_repeat_rate(speed, delay)
+}
 
 
 // Global thread-safe access to keyboard
@@ -32,7 +34,7 @@ static KB: Mutex<Keyboard> = Mutex::new(
 						     
 // Defining Keyboard struct 
 struct Keyboard { 
-	code: u8,          // Byte von Tastatur
+    code: u8,          // Byte von Tastatur
     prefix: u8,        // Prefix von Tastatur
     gather: key::Key,  // letzter dekodierter Key
     leds: u8,          // Zustand LEDs
@@ -297,14 +299,28 @@ impl Keyboard {
     *                  ungueltigen Wert zurueck, was mit Key::valid ()          *
     *                  ueberprueft werden kann.                                 *
     *****************************************************************************/
-   fn key_hit(&mut self) -> key::Key {
-      let invalid: key::Key = Default::default();  // nicht explizit initialisierte Tasten sind ungueltig
-
-      /* Hier muss Code eingefuegt werden. */
-      
-      return invalid;
-   }
-
+    fn key_hit(&mut self) -> key::Key {
+        let invalid: key::Key = Default::default();  // nicht explizit initialisierte Tasten sind ungueltig
+        let mut status: u8;
+        loop {
+            // Liegt ein Byte im Buffer?
+            loop {
+                status = cpu::inb(KBD_CTRL_PORT);
+                if (status & KBD_OUTB) != 0 {
+                    break;
+                }
+            };
+            self.code = cpu::inb(KBD_DATA_PORT);
+            if self.key_decoded() {
+                break;
+            }
+        }
+        if self.gather.valid() {
+            return self.gather;
+        }
+        return invalid;
+    }
+    
    /*****************************************************************************
     * Funtkion:        reboot                                                   *
     *---------------------------------------------------------------------------*
@@ -345,11 +361,34 @@ impl Keyboard {
     *                  ((2 ^ B) * (D + 8) / 240 sec                             *
     *                  Bits 4-3 = B; Bits 2-0 = D;                              *
     *****************************************************************************/
-   fn set_repeat_rate (&mut self, speed: u8, delay: u8) {
-
-      /* Hier muss Code eingefuegt werden. */
-
-   }
+    fn set_repeat_rate (&mut self, speed: u8, delay: u8) {
+        let repeat_rate = (delay << 5) | speed;
+        let mut status:u8;
+        loop {
+            // Ist der Tatsaturcontroller bereit?
+            loop {
+                status = cpu::inb(KBD_CTRL_PORT);
+                if (status & KBD_INPB) == 0 {
+                    break;
+                }
+            };
+            // repeat befehl geben
+            cpu::outb(KBD_DATA_PORT, KBD_CMD_SET_SPEED);
+            // Hat der Tatsaturcontroller geantwortet?
+            loop {
+                status = cpu::inb(KBD_CTRL_PORT);
+                if (status & KBD_OUTB) != 0 {
+                    break;
+                }
+            };
+            // ACK?
+            if cpu::inb(KBD_DATA_PORT) == KBD_REPLY_ACK {
+                cpu::outb(KBD_DATA_PORT, repeat_rate);
+                break;
+            }
+            // erneut eersuchen
+        }
+    }
 
    /*****************************************************************************
     * Funktion:        set_led                                                  *
@@ -360,10 +399,37 @@ impl Keyboard {
     *      led:        Welche LED? (caps_lock, num_lock, scroll_lock)           *
     *      on:         0 = aus, 1 = an                                          *
     *****************************************************************************/
-   fn set_led(&mut self, led: u8, on: bool) {
-
-      /* Hier muss Code eingefuegt werden. */
-
-   }
+    fn set_led(&mut self, led: u8, on: bool) {
+        let newleds = if on {
+            self.leds | led
+        } else {
+            self.leds & (!led)
+        };
+        let mut status:u8;
+        loop {
+            // Ist der Tatsaturcontroller bereit?
+            loop {
+                status = cpu::inb(KBD_CTRL_PORT);
+                if (status & KBD_INPB) == 0 {
+                    break;
+                }
+            };
+            // LED befehl geben
+            cpu::outb(KBD_DATA_PORT, KBD_CMD_SET_LED);
+            // Hat der Tatsaturcontroller geantwortet?
+            loop {
+                status = cpu::inb(KBD_CTRL_PORT);
+                if (status & KBD_OUTB) != 0 {
+                    break;
+                }
+            };
+            // ACK?
+            if cpu::inb(KBD_DATA_PORT) != KBD_REPLY_ACK {
+                cpu::outb(KBD_DATA_PORT, newleds);
+                break; 
+            }
+            // erneut versuchen
+        }
+    }
 
 }

@@ -56,9 +56,12 @@ const CGA_LOW_BYTE_CMD: u8   = 15;     // cursor high byte
  * Beschreibung:    Lösche den Textbildschirm.                               *
  *****************************************************************************/
 pub fn clear() {
-
-   /* Hier muss Code eingefuegt werden */
-
+    for x in 0..CGA_COLUMNS {
+      for y in 0..CGA_ROWS {
+         show (x, y, ' ', CGA_STD_ATTR)
+      }
+    }
+    setpos(0, 0);
 }
 
 
@@ -98,10 +101,11 @@ pub fn show (x: u32, y: u32, character: char, attrib: u8) {
  * Rückgabewerte:   x und y                                                  *
  *****************************************************************************/
 pub fn getpos () -> (u32, u32) {
-
-   /* Hier muss Code eingefuegt werden */
-
-   (0,0) // Platzhalter, entfernen und durch sinnvollen Rueckgabewert ersetzen 
+    cpu::outb(CGA_INDEX_PORT, CGA_HIGH_BYTE_CMD);
+    let x = cpu::inb(CGA_DATA_PORT);
+    cpu::outb(CGA_INDEX_PORT, CGA_LOW_BYTE_CMD);
+    let y = cpu::inb(CGA_DATA_PORT);
+    (x as u32, y as u32)
 }
 
 
@@ -111,9 +115,10 @@ pub fn getpos () -> (u32, u32) {
  * Beschreibung:    Setzen des Cursors in Spalte x und Zeile y.              *
  *****************************************************************************/
 pub fn setpos (x:u32, y:u32) {
-
-   /* Hier muss Code eingefuegt werden */
-
+    cpu::outb(CGA_INDEX_PORT, CGA_HIGH_BYTE_CMD);
+    cpu::outb(CGA_DATA_PORT, x as u8);
+    cpu::outb(CGA_INDEX_PORT, CGA_LOW_BYTE_CMD);
+    cpu::outb(CGA_DATA_PORT, y as u8);
 }
 
 
@@ -126,10 +131,22 @@ pub fn setpos (x:u32, y:u32) {
  *                                                                           *
  * Parameter:       zahl       auszugebende Hex-Zahl                         *
  *****************************************************************************/
-pub fn print_dec (mut zahl: u32) {
-
-   /* Hier muss Code eingefuegt werden */
-
+pub fn print_dec (zahl: u32) {
+    let (mut x, mut y) = getpos();
+    let zahl = zahl.to_string();
+    for character in zahl.chars() {
+        show(x, y, character, CGA_STD_ATTR);
+        x = (x + 1) % CGA_COLUMNS;
+        if x == 0 {
+            y = if y == CGA_ROWS - 1 {
+                    scrollup();
+                    y
+                } else {
+                    y + 1
+                };
+        }
+    }
+    setpos(x, y);
 }
 
  
@@ -143,9 +160,21 @@ pub fn print_dec (mut zahl: u32) {
  * Parameter:       zahl       auszugebende Hex-Zahl                         *
  *****************************************************************************/
 pub fn print_hex (zahl: u32) {
-
-   /* Hier muss Code eingefuegt werden */
-
+    let (mut x, mut y) = getpos();
+    let hex = format!("{:x}", zahl);
+    for character in hex.chars() {
+        show(x, y, character, CGA_STD_ATTR);
+        x = (x + 1) % CGA_COLUMNS;
+        if x == 0 {
+            y = if y == CGA_ROWS - 1 {
+                    scrollup();
+                    y
+                } else {
+                    y + 1
+                };
+        }
+    }
+    setpos(x, y);
 }
 
  
@@ -158,9 +187,30 @@ pub fn print_hex (zahl: u32) {
  * Parameter:       b       auszugebendes Zeichen                            *
  *****************************************************************************/
 pub fn print_byte (b: u8) {
-
-   /* Hier muss Code eingefuegt werden */
-
+    let (mut x, mut y) = getpos();
+    let character = b as char;
+    if character == '\n' {
+        x = 0;
+        y = if y == CGA_ROWS - 1 {
+                scrollup();
+                y
+            } else {
+                y + 1
+            };
+        setpos(x, y);
+        return;
+    }
+    show(x, y, character, CGA_STD_ATTR);
+    x = (x + 1) % CGA_COLUMNS;
+    if x == 0 {
+        y = if y == CGA_ROWS - 1 {
+                scrollup();
+                y
+            } else {
+                y + 1
+            };
+    }
+    setpos(x, y);
 }
 
 
@@ -174,9 +224,31 @@ pub fn print_byte (b: u8) {
  *                  attrib      Attributbyte fuer alle Zeichen der Z.kette   *
  *****************************************************************************/
 pub fn print_str (string: &str, attrib: u8) {
-
-   /* Hier muss Code eingefuegt werden */
-
+    for character in string.chars() {
+        let (mut x, mut y) = getpos();
+        if character == '\n' {
+            x = 0;
+            y = if y == CGA_ROWS - 1 {
+                scrollup();
+                y
+            } else {
+                y + 1
+            };
+            setpos(x, y);
+            return;
+        }
+        show(x, y, character, attrib);
+        x = (x + 1) % CGA_COLUMNS;
+        if x == 0 {
+            y = if y == CGA_ROWS - 1 {
+                    scrollup();
+                    y
+                } else {
+                    y + 1
+                };
+        }
+        setpos(x, y);
+    }
 }
     
 
@@ -188,9 +260,18 @@ pub fn print_str (string: &str, attrib: u8) {
  *                  gefuellt.                                                *
  *****************************************************************************/
 pub fn scrollup () {
-
-   /* Hier muss Code eingefuegt werden */
-
+    for y in 1..CGA_ROWS {
+        for x in 0..(CGA_COLUMNS * 2) {
+            let from = 2 * y * CGA_COLUMNS + x;
+            let to = 2 * (y - 1) * CGA_COLUMNS + x;
+            unsafe {
+                *((CGA_BASE_ADDR + to) as *mut u8) = *((CGA_BASE_ADDR + from) as *mut u8);
+            }
+        }
+    }
+    for x in 0..CGA_COLUMNS {
+        show(x, CGA_ROWS - 1, ' ', CGA_STD_ATTR);
+    }
 }
  
  
@@ -208,8 +289,10 @@ pub fn scrollup () {
  * Rückgabewert:    u8          Attribut-Code                                *
  *****************************************************************************/
 pub fn attribute (bg: Color, fg: Color, blink: bool) -> u8 {
-
-   /* Hier muss Code eingefuegt werden */
-   
-   0 // Platzhalter, entfernen und durch sinnvollen Rueckgabewert ersetzen 
+    let colors: u8 = (bg as u8) << 4 | (fg as u8);
+    if blink {
+        colors | 0b1000_0000
+    } else {
+        colors & 0b0111_1111
+    }
 }

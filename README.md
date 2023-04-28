@@ -30,4 +30,4 @@ Die Tabellen für die Abbildung von Scan-Codes auf ASCII-Codes unterstützen d
 *Achtung:
 Die Methode zur Ansteuerung der LEDs funktioniert nur richtig auf echter Hardware.*
 
-*Beachten Sie die Kommentare im Quelltext der Vorgabe, sowie die Datei* `HinweiseTastatur.pdf`.
+*Beachten Sie die Kommentare im Quelltext der Vorgabe, sowie die Datei* `KBD-slides.pdf`.

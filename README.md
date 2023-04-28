@@ -1,7 +1,9 @@
 # Aufgabe 2: Speicherverwaltung und PC-Speaker
 
 ## Lernziele1. Verstehen wie eine Speichervwaltung funktioniert und implementiert wird.
-2. Hardwarenahe Programmierung: PC-Speaker / Programmable Interval Timer## A2.1: Bump-Allocator
+2. Hardwarenahe Programmierung: PC-Speaker / Programmable Interval Timer
+
+Allgemeine Hinweise zu einer Heap-Verwaltung finden sich in `MEM-slides.pdf`.## A2.1: Bump-Allocator
 In dieser Aufgabe soll ein sehr einfacher sogenannter Bump-Allocator implementiert werden, um zunächst die Integration in das System zu verstehen sowie die Anbindung an die Programmiersprache. Dieser Allokator kennt lediglich den Heap-Anfang, das Heap-Ende und merkt sich in der Variablen `next` die aktuelle Adresse im Heap, ab welcher der Speicher frei ist. Bei jeder Allokation wird `next` um die gewünschte Anzahl Bytes weitergesetzt, sofern nicht das Heap-Ende erreicht ist, siehe Abbildung.
 
 ![Bump-Allocator](https://github.com/mschoett/hhuTOSc/blob/aufgabe-2/img/bump_allocator.jpg)

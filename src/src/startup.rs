@@ -37,25 +37,28 @@ use user::aufgabe2::sound_demo;
 
 
 fn aufgabe1() {
-   cga::clear();
-   text_demo::run();
-   keyboard_demo::run();
+    cga::clear();
+    text_demo::run();
+    keyboard_demo::run();
 }
 
 fn aufgabe2() {
-   heap_demo::run();
-   sound_demo::run();
+    heap_demo::run();
+    sound_demo::run();
 }
 
 
 
 #[no_mangle]
 pub extern fn startup() {
+   
+    cga::clear();
+    keyboard::set_repeat_rate(0x1f, 0x01); // Windows standard
 
     // Speicherverwaltung initialisieren
-   /* Hier muss Code eingefuegt werden */
+    /* Hier muss Code eingefuegt werden */
 
-//    aufgabe1();
+    //aufgabe1();
     aufgabe2();
     
     loop{}

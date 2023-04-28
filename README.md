@@ -6,6 +6,7 @@
 3. Unterschied zwischen Threads und Koroutinen
 3. Verstehen wie ein Scheduler funktioniert
 
+FÜr diese Aufgabe sollte zuvor der Assembler-Crashkurs in `ASM-slides.pdf` gelesen werden.
 
 ## A4.1: Koroutinen
 In dieser Aufgabe soll die Umschaltung zwischen Koroutinen in Assembler programmiert werden. Koroutinen sind eine Vorstufe zu Threads die später (siehe unten) zusätzlich eingeführt werden. 

@@ -18,6 +18,7 @@ use crate::devices::key as key;  // shortcut for key
 // Public functions for convenient access 
 pub fn key_hit() -> key::Key {
 	return KB.lock().key_hit();
+
 }
 
 
@@ -298,11 +299,14 @@ impl Keyboard {
     *                  ueberprueft werden kann.                                 *
     *****************************************************************************/
    fn key_hit(&mut self) -> key::Key {
-      let invalid: key::Key = Default::default();  // nicht explizit initialisierte Tasten sind ungueltig
-
-      /* Hier muss Code eingefuegt werden. */
-      
-      return invalid;
+      loop {
+         if cpu::inb(KBD_CTRL_PORT) & 0x01 != 0 {
+               self.code = cpu::inb(KBD_DATA_PORT);
+               if cpu::inb(KBD_CTRL_PORT) & KBD_AUXB == 0 && self.key_decoded()  {
+                  return self.gather;
+               }
+         }
+      }
    }
 
    /*****************************************************************************
@@ -347,7 +351,7 @@ impl Keyboard {
     *****************************************************************************/
    fn set_repeat_rate (&mut self, speed: u8, delay: u8) {
 
-      /* Hier muss Code eingefuegt werden. */
+      /* Hier muss Code eingefuegt werden. FREIWILLIG */
 
    }
 
@@ -362,7 +366,7 @@ impl Keyboard {
     *****************************************************************************/
    fn set_led(&mut self, led: u8, on: bool) {
 
-      /* Hier muss Code eingefuegt werden. */
+      /* Hier muss Code eingefuegt werden. FREIWILLIG */
 
    }
 

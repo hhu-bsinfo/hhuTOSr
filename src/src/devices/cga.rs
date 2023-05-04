@@ -49,16 +49,21 @@ const CGA_DATA_PORT: u16     = 0x3d5;  // read/write register
 const CGA_HIGH_BYTE_CMD: u8  = 14;     // cursor high byte
 const CGA_LOW_BYTE_CMD: u8   = 15;     // cursor high byte
 
+static mut CURSOR_POS_X: u32 = 0;
+static mut CURSOR_POS_Y: u32 = 0;
 
 /*****************************************************************************
  * Funktion:        clear                                                    *
  *---------------------------------------------------------------------------*
  * Beschreibung:    Lösche den Textbildschirm.                               *
  *****************************************************************************/
-pub fn clear() {
-
-   /* Hier muss Code eingefuegt werden */
-
+pub fn clear() {   
+      for y in 0..CGA_ROWS {
+         for x in 0..CGA_COLUMNS {
+               show(x, y, ' ', CGA_STD_ATTR);
+         }
+      }
+      setpos(0, 0);
 }
 
 
@@ -98,10 +103,9 @@ pub fn show (x: u32, y: u32, character: char, attrib: u8) {
  * Rückgabewerte:   x und y                                                  *
  *****************************************************************************/
 pub fn getpos () -> (u32, u32) {
-
-   /* Hier muss Code eingefuegt werden */
-
-   (0,0) // Platzhalter, entfernen und durch sinnvollen Rueckgabewert ersetzen 
+   unsafe{
+      return (CURSOR_POS_X, CURSOR_POS_Y);   
+   }
 }
 
 
@@ -111,9 +115,10 @@ pub fn getpos () -> (u32, u32) {
  * Beschreibung:    Setzen des Cursors in Spalte x und Zeile y.              *
  *****************************************************************************/
 pub fn setpos (x:u32, y:u32) {
-
-   /* Hier muss Code eingefuegt werden */
-
+   unsafe{
+      CURSOR_POS_X = x;
+      CURSOR_POS_Y = y;
+   }
 }
 
 
@@ -127,8 +132,25 @@ pub fn setpos (x:u32, y:u32) {
  * Parameter:       zahl       auszugebende Hex-Zahl                         *
  *****************************************************************************/
 pub fn print_dec (mut zahl: u32) {
+   let mut buffer: [u8; 10] = [0; 10];
+   let mut i: u32 = 0;
 
-   /* Hier muss Code eingefuegt werden */
+   if zahl == 0 {
+      print_byte('0' as u8);
+      return;
+   }
+
+   while zahl > 0 {
+      buffer[i as usize] = ('0' as u8) + (zahl % 10) as u8;
+      i += 1;
+      zahl /= 10;
+   }
+
+   while i > 0 {
+      i -= 1;
+      print_byte(buffer[i as usize]);
+   }
+
 
 }
 
@@ -142,9 +164,30 @@ pub fn print_dec (mut zahl: u32) {
  *                                                                           *
  * Parameter:       zahl       auszugebende Hex-Zahl                         *
  *****************************************************************************/
-pub fn print_hex (zahl: u32) {
+pub fn print_hex (mut zahl: u32) {
+   let mut buffer: [u8; 8] = [0; 8];
+   let mut i: u32 = 0;
 
-   /* Hier muss Code eingefuegt werden */
+   if zahl == 0 {
+      print_byte('0' as u8);
+      return;
+   }
+
+   while zahl > 0 {
+      let rest = zahl % 16;
+      if rest < 10 {
+         buffer[i as usize] = ('0' as u8) + rest as u8;
+      } else {
+         buffer[i as usize] = ('A' as u8) + (rest - 10) as u8;
+      }
+      i += 1;
+      zahl /= 16;
+   }
+
+   while i > 0 {
+      i -= 1;
+      print_byte(buffer[i as usize]);
+   }
 
 }
 
@@ -158,8 +201,22 @@ pub fn print_hex (zahl: u32) {
  * Parameter:       b       auszugebendes Zeichen                            *
  *****************************************************************************/
 pub fn print_byte (b: u8) {
-
-   /* Hier muss Code eingefuegt werden */
+   let (mut x, mut y) = getpos();
+   match b {
+       b'\n' => {
+           y += 1;
+           x = 0;
+       },
+       _ => {
+           show(x, y, b as char, CGA_STD_ATTR);
+           x += 1;
+           if x >= CGA_COLUMNS {
+               x = 0;
+               y += 1;
+           }
+       }
+   }
+   setpos(x, y);
 
 }
 
@@ -173,10 +230,10 @@ pub fn print_byte (b: u8) {
  * Parameter:       string      Auszugebende Zeichenkette                    *
  *                  attrib      Attributbyte fuer alle Zeichen der Z.kette   *
  *****************************************************************************/
-pub fn print_str (string: &str, attrib: u8) {
-
-   /* Hier muss Code eingefuegt werden */
-
+pub fn print_str(string: &str, attrib: u8) {
+   for c in string.bytes() {
+       print_byte(c);
+   }
 }
     
 
@@ -188,8 +245,19 @@ pub fn print_str (string: &str, attrib: u8) {
  *                  gefuellt.                                                *
  *****************************************************************************/
 pub fn scrollup () {
+     // Move every character up by one line
+     for y in 0..CGA_ROWS - 1 {
+      for x in 0..CGA_COLUMNS {
+          let character = unsafe { *((CGA_BASE_ADDR + ((y + 1) * CGA_COLUMNS + x) * 2) as *const u8) };
+          let attribute = unsafe { *((CGA_BASE_ADDR + ((y + 1) * CGA_COLUMNS + x) * 2 + 1) as *const u8) };
+          show(x, y, character as char, attribute);
+      }
+  }
 
-   /* Hier muss Code eingefuegt werden */
+  // Fill the bottom line with spaces
+  for x in 0..CGA_COLUMNS {
+      show(x, CGA_ROWS - 1, ' ', CGA_STD_ATTR);
+  }
 
 }
  
@@ -208,8 +276,11 @@ pub fn scrollup () {
  * Rückgabewert:    u8          Attribut-Code                                *
  *****************************************************************************/
 pub fn attribute (bg: Color, fg: Color, blink: bool) -> u8 {
-
-   /* Hier muss Code eingefuegt werden */
-   
-   0 // Platzhalter, entfernen und durch sinnvollen Rueckgabewert ersetzen 
+   let mut attr: u8 = 0;
+   attr |= bg as u8;
+   attr |= fg as u8;
+   if blink {
+       attr |= 0x80;
+   }
+   return attr;
 }

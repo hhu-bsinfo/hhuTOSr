@@ -7,8 +7,11 @@ use crate::devices::keyboard as keyboard;  // shortcut for keyboard
 
 pub fn run() {
 
-   /* Hier muss Code einfgeügt werden */ 
-        
-   // 'key_hit' aufrufen und Zeichen ausgeben
+   loop{
+      let mut key: key::Key = keyboard::key_hit();
+      if key.valid() {
+         cga::print_byte(key.asc);
+      }
+   }
 
 }

@@ -95,8 +95,8 @@ impl LinkedListAllocator {
         -> Option<(&'static mut ListNode)>
     {
 
-       /* Hier muss Code eingefuegt werden */
-
+        /* Hier muss Code eingefuegt werden */
+        return std::option::Option::None;
     }
     
     
@@ -108,8 +108,8 @@ impl LinkedListAllocator {
         -> Result<usize, ()>
     {
 
-       /* Hier muss Code eingefuegt werden */
-
+        /* Hier muss Code eingefuegt werden */
+        return std::result::Result::Ok(usize::MIN);
     }
 
 

@@ -56,7 +56,7 @@ pub extern fn startup() {
     keyboard::set_repeat_rate(0x1f, 0x01); // Windows standard
 
     // Speicherverwaltung initialisieren
-    /* Hier muss Code eingefuegt werden */
+    allocator::init();
 
     //aufgabe1();
     aufgabe2();

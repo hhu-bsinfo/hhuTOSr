@@ -14,6 +14,7 @@
 use super::{align_up, Locked};
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::ptr;
+use std::u8;
 
 
 pub struct BumpAllocator {
@@ -26,8 +27,8 @@ impl BumpAllocator {
     // Creates a new empty bump allocator.
     pub const fn new() -> Self {
 
-       /* Hier muss Code eingefuegt werden */
-
+        /* Hier muss Code eingefuegt werden */
+        return BumpAllocator {  };
     }
 
     /*
@@ -51,8 +52,8 @@ impl BumpAllocator {
 
    pub unsafe fn alloc(&mut self, layout: Layout) -> *mut u8 {
 
-       /* Hier muss Code eingefuegt werden */
-
+        /* Hier muss Code eingefuegt werden */
+        return ptr::null_mut();
    }
    
    pub unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {

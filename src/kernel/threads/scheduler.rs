@@ -147,8 +147,8 @@ impl Scheduler {
     *---------------------------------------------------------------------------*
     * Beschreibung:    CPU freiwillig abgeben und Auswahl des naechsten Threads.*
     *                  Naechsten Thread aus der readyQueue holen, den aktuellen *
-    *                  aus der readyQueue austragen und auf den naechsten Thread*
-    *                  umschalten.                                              *
+    *                  wieder in die readyQueue eintragen und auf den naechsten *
+    *                  Thread umschalten.                                       *
     *                                                                           *
     * Achtung:         Falls nur der Idle-Thread läuft, so ist die readyQueue   * 
     *                  leer.                                                    *

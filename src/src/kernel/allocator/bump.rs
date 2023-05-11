@@ -18,17 +18,19 @@ use std::u8;
 
 
 pub struct BumpAllocator {
-
-   /* Hier muss Code eingefuegt werden */
-   
+    start: usize,
+    end: usize,
+    next: usize,
 }
 
 impl BumpAllocator {
     // Creates a new empty bump allocator.
     pub const fn new() -> Self {
-
-        /* Hier muss Code eingefuegt werden */
-        return BumpAllocator {  };
+        return BumpAllocator {
+            start: 0,
+            end: 0,
+            next: 0,
+        };
     }
 
     /*
@@ -38,22 +40,24 @@ impl BumpAllocator {
      *  memory range is unused. Also, this method must be called only once.
      */
     pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
-
-       /* Hier muss Code eingefuegt werden */
-
+        self.start = heap_start;
+        self.end = heap_start + heap_size;
+        self.next = heap_start;
     }
 
     // Dump free list
     pub fn dump_free_list(&mut self) {
-
-       /* Hier muss Code eingefuegt werden */
- 		
+        println!("Heap-Start:   {:#x}, Heap-End:  {:#x}", self.start, self.end);
+        println!("Next-Address: {:#x}, free:      {:#x}", self.next, self.end - self.next);
 	}
 
    pub unsafe fn alloc(&mut self, layout: Layout) -> *mut u8 {
-
-        /* Hier muss Code eingefuegt werden */
-        return ptr::null_mut();
+        if self.next + layout.size() > self.end {
+            return ptr::null_mut()
+        }
+        let p = (self.next + layout.size()) as *mut u8;
+        self.next += layout.size();
+        return p;
    }
    
    pub unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {

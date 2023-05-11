@@ -8,7 +8,7 @@
  *                                                                           *
  * Autor:           Philipp Oppermann                                        *
  *                  https://os.phil-opp.com/allocator-designs/               *
- *                  Modified by Michael Schoettner, 15.3.2022                *
+ *                  Modified by Michael Schoettner, 11.5.2023                *
  *****************************************************************************/
 
 use super::{align_up, Locked};
@@ -30,12 +30,10 @@ impl BumpAllocator {
 
     }
 
-    /*
-     * Initializes the bump allocator with the given heap bounds.
-     * 
-     * This method is unsafe because the caller must ensure that the given
-     *  memory range is unused. Also, this method must be called only once.
-     */
+    // Initialize the allocator with the given heap bounds.
+    //
+    // This function is unsafe because the caller must guarantee that 
+    // the given heap bounds are valid. This method must be called only once.
     pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
 
        /* Hier muss Code eingefuegt werden */

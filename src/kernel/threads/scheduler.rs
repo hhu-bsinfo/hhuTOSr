@@ -112,6 +112,7 @@ impl Scheduler {
       // 'schedule'	   
       unsafe {
          drop(Box::from_raw(that));
+         SCHEDULER.force_unlock();
 	  }
 	  
       // Umschalten
@@ -119,7 +120,10 @@ impl Scheduler {
           // Aufruf verhindert, dass 'nx' geloescht wird, siehe auch
           // 'schedule'
 		  let raw = Box::into_raw(nx);
-          thread::Thread::switch( that, raw );
+          SCHEDULER.lock().active = raw;
+          unsafe {
+             thread::Thread::start( raw );
+	      }
       }
    }
 

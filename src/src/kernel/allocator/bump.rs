@@ -61,7 +61,7 @@ impl BumpAllocator {
    }
    
    pub unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
-      println!("   dealloc: size={}, align={}; not supported", layout.size(), layout.align());
+      //println!("   dealloc: size={}, align={}; not supported", layout.size(), layout.align());
    }
 
 }

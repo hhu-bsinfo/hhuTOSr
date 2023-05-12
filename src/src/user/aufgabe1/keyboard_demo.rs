@@ -6,6 +6,7 @@ use crate::devices::keyboard as keyboard;  // shortcut for keyboard
 
 
 pub fn run() {
+    println!("Zeichen eintippen:");
     let mut input: key::Key;
     loop {
         input = keyboard::key_hit();

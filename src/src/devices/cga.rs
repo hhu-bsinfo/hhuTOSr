@@ -189,7 +189,8 @@ pub fn print_hex (zahl: u32) {
 pub fn print_byte (b: u8) {
     let (mut x, mut y) = getpos();
     let character = b as char;
-    if character == '\n' {
+    // Line Feed oder Carriage Return
+    if character == '\n' || character == 13 as char {
         x = 0;
         y = if y == CGA_ROWS - 1 {
                 scrollup();

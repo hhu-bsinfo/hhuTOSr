@@ -46,6 +46,8 @@ In folgenden Dateien muss Code implementiert werden: `kernel/interrupts/pic.rs`,
 
 ## A3.3: Tastaturabfrage per Interrupt
 Nun soll die Funktion `trigger` in `keyboard` implementiert werden. Bei jedem Interrupt soll `key_hit` aufgerufen und geprüft werden, ob ein Zeichen erfolgreich dekodiert wurde. Wenn dies der Fall ist, so soll der ASCII-Code des Zeichens in der neuen Variable `lastkey` gespeichert werden, welche später von Anwendungen ausgelesen werden kann. In `mylib/inut.rs` sind zwei Beispielfunktionen welche `lastkey` verwenden, beispielsweise warten bis der Benutzer die Taste Return gedrückt hat.
+
+Falls `key_hit` in Aufgabe 1 so realisiert wurde, dass in einer Endlos-Schleife Daten von der Tastatur eingelesen werden, bis ein Zeichen erfolgreich dekodiert wurde, so muss diese Endlos-Schleife entfernt werden. Es sollen nun bei jedem Interrupt nur so viele Bytes von der Tastatur eingelesen werden, wie unmittelbar vorhanden sind. Wir wollen nicht den Interrupt blockieren durch aktives Warten auf weitere Bytes.
 *Hinweise:*- *Die PS/2-Maus hängt ebenfalls am Keyboard-Controller, verwendet aber IRQ12. Da wir keinen Handler für IRQ12 haben, kann es sein, dass wenn IRQ1 auftritt noch Daten von der Maus abzuholen sind. Dies können Sie anhand des* `AUXB`*-Bits im Statusregister erkennen.*- *Ferner tritt unter Qemu manchmal direkt ein IRQ1 nach dem Start auf, ohne eine Tastatureingabe. Das ist auf echter Hardware nicht der Fall. Daher unter Qemu bitte ignorieren.*
 
 **Beispielausgaben in** `Keyboard::trigger` **an einer festen Position**

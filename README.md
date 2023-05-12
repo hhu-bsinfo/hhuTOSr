@@ -12,7 +12,8 @@ Zunächst müssen die leeren Funktionen in dem Modul `PIC` implementiert werden.
 
 Anschliessend soll die Funktion `plugin` in `keyboard.rs` programmiert werden. Hier muss der Interrupt der Tastatur am `PIC` mit `pic::allow` freigeschaltet werden. Die Funktion `pic::trigger` kann vorerst leer bleiben.
 
-In `startup` muss die ISR der Tastatur mit `keyboard::plugin()` registriert werden und danach muessen die Interrupts an der CPU mit `cpu::enable_int()` zugelassen werden.
+In `startup` muss die ISR der Tastatur mit `keyboard::plugin()` registriert werden und danach muessen die Interrupts an der CPU mit `cpu::enable_int()` zugelassen werden. In der Vorgabe wird der PIC bereits durch Aufruf von `interrupts::init()` initialisiert.
+
 
 Wenn nun das System startet sollte bei jedem Drücken und Loslassen einer Taste eine Textmeldung von `int_disp` zu sehen sein. Dies funktioniert allerdings nur einige wenige Male. Wenn die Zeichen nicht vom Tastaturcontroller abgeholt werden, läuft der Tastaturpuffer irgendwann voll. Sobald der Puffer voll ist, sendet der Tastaturcontroller keine Interrupts mehr.
 

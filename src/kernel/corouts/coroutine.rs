@@ -9,13 +9,14 @@
  *                  In 'init' wird der initiale Kontext der Koroutine ein-   *
  *                  erichtet. Mit 'start' wird ein Koroutine erstmalig       *
  *                  aktiviert. Das Umschalten auf die naechste Koroutine     * 
- *                  erfolgt durch den Aufruf von 'switch_to_next'.           *
+ *                  erfolgt durch den Aufruf von 'switch2next'.              *
  *                                                                           *
  *                  Bei einem Koroutinenwechsel wird der aktuelle Kontext    *
  *                  auf dem Stack gesichert. Die Adresse des zuletzt ge-     *
- *                  nutzten Stackeintrags wird in 'context' gespeichert.     * 
+ *                  nutzten Stackeintrags wird in 'Coroutine::context'       *     
+ *                  gespeichert.                                             * 
  *                                                                           *
- * Autor:           Michael Schoettner, 14.03.2023                           *
+ * Autor:           Michael Schoettner, 15.05.2023                           *
  *****************************************************************************/
 
 
@@ -29,8 +30,9 @@ use crate::kernel::corouts::stack;
 
 
 extern "C" { 
-    fn _coroutine_start  (context: *mut c_void); 
-    fn _coroutine_switch (context_now: *mut c_void, context_then: *mut c_void);
+    fn _coroutine_start  (now_coroutine_struct:  *mut c_void); 
+    fn _coroutine_switch (now_coroutine_struct:  *mut c_void, 
+                          then_coroutine_struct: *mut c_void);
 }
 
 
@@ -65,20 +67,20 @@ impl Coroutine {
 		                                   next: ptr::null_mut(),
 		                                  } );
 		                                
-      corout.coroutine_state_init();
+      corout.coroutine_prepare_stack();
       
       corout
    }
 	
    pub fn start (c: *mut Coroutine) { 
 
-      /* Hier muss Code eingefuegt werden */
+     /* Hier muss Code eingefuegt werden */
 
    }
   
-   pub fn switch_to_next (now: *mut Coroutine) {
-   
-      /* Hier muss Code eingefuegt werden */
+   pub fn switch2next (now: *mut Coroutine) {
+
+     /* Hier muss Code eingefuegt werden */
 
    }
 
@@ -92,11 +94,11 @@ impl Coroutine {
 
    pub fn set_next(&mut self, nxt: *mut Coroutine) {
 
-      /* Hier muss Code eingefuegt werden */
+     /* Hier muss Code eingefuegt werden */
 
    }
    
-   fn coroutine_state_init (&mut self) {
+   fn coroutine_prepare_stack (&mut self) {
 	   let faddr = kickoff as *const ();
        let object: *const Coroutine = self;
        let sp: *mut u64 = self.stack.get_data();

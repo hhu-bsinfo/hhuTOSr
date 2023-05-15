@@ -15,7 +15,7 @@
  *                  Struktur 'ThreadState', in dem die Werte der nicht-      *
  *                  fluechtigen Register gesichert werden koennen.           *
  *                                                                           *
- * Autor:           Michael Schoettner, 26.04.2022                           *
+ * Autor:           Michael Schoettner, 15.05.2023                           *
  *****************************************************************************/
 
 use std::rc::{Rc};
@@ -33,8 +33,9 @@ use crate::mylib::queue::Link;
 
 
 extern "C" { 
-	fn _thread_start  (tp:  *mut c_void); 
-    fn _thread_switch (now: *mut c_void, then: *mut c_void);
+	fn _thread_start  (now_thread_struct:  *mut c_void); 
+    fn _thread_switch (now_thread_struct:  *mut c_void, 
+                       then_thread_struct: *mut c_void);
 }
 
 
@@ -69,21 +70,21 @@ impl Thread {
 		                                   }
 		                           );
 		                          
-      threadobj.thread_state_init();
+      threadobj.thread_prepare_stack();
       
       threadobj
    }
 
-   pub fn start (that: *mut Thread) { 
+   pub fn start (now: *mut Thread) { 
       unsafe {
-  	     _thread_start  (that as *mut c_void); 
+  	     _thread_start  (now as *mut c_void); 
       }
    }
    
-   pub fn switch (that: *mut Thread, next: *mut Thread) { 
+   pub fn switch (now: *mut Thread, then: *mut Thread) { 
       unsafe {
-  	     _thread_switch  (that as *mut c_void,
-  	                      next as *mut c_void,
+  	     _thread_switch  (now as *mut c_void,
+  	                      then as *mut c_void,
   	                     ); 
       }
    }
@@ -96,7 +97,7 @@ impl Thread {
 	   self
    }
 
-   fn thread_state_init (&mut self) {
+   fn thread_prepare_stack (&mut self) {
 	   let faddr = kickoff_thread as *const ();
        let object: *const Thread = self;
        let sp: *mut u64 = self.stack.get_data();

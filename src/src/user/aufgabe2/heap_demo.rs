@@ -86,9 +86,6 @@ fn demo() {
 
 
 pub fn run () {
-
     demo();
-
-    /* Hier muss Code eingefuegt werden */
-
+    wait_for_return();
 }

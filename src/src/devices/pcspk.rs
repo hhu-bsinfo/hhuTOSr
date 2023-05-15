@@ -140,9 +140,19 @@ fn read_counter() -> u32 {
  * Parameter:       time (delay in ms)                                       *
  *****************************************************************************/
 fn delay (mut time: u32) {
-
-   /* Hier muss Code eingefuegt werden */
-   
+    let count_ms = (0.001 * 1193180.0) as u16; // 0.001ms * 1,19318MHz
+    while time > 0 {
+        cpu::outb(PORT_CTRL, 0x30); // Zaehler-0 konfigurieren
+        cpu::outb(PORT_DATA0, (count_ms % 256) as u8); // lobyte
+        cpu::outb(PORT_DATA0, (count_ms / 256) as u8); // hibyte
+        loop {
+            let current = read_counter();
+            if current == 0 || current > count_ms as u32 {
+                break;
+            }
+        }
+        time -= 1;
+    }
 }
 
 

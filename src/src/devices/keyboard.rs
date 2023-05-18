@@ -42,6 +42,23 @@ pub fn plugin() {
 	KB.lock().plugin();
 }
 
+// Global thread-safe access to keyboard
+static KB: Mutex<Keyboard> = Mutex::new( 
+                        Keyboard{code:0, 
+							     prefix:0, 
+							     gather: key::Key{asc:0, scan:0, modi:0}, 
+							     leds:0,
+							     lastkey:0,} );				     
+						     
+// Defining Keyboard struct 
+struct Keyboard { 
+	code: u8,          // Byte von Tastatur
+    prefix: u8,        // Prefix von Tastatur
+    gather: key::Key,  // letzter dekodierter Key
+    leds: u8,          // Zustand LEDs
+    lastkey: u8,       // last key 
+}
+
 
 /*****************************************************************************
  * Implementierung: Keyboard                                                 *

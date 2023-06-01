@@ -25,14 +25,15 @@ In folgender Datei muss Code implementiert werden: `devices/pcspk.rs`.
 
 
 ## A5.3 Threadumschaltung mithilfe des PIT
-In der Vorgabe ist neu die Funktion `preempt`in `scheduler.rs`. Diese Methode soll bei jedem Tick aus der ISR vom PIT aufgerufen werden und eine erzwungene Threadumschaltung durchführen. Somit entspricht eine Zeitscheibe einem Tick.  
+In der Vorgabe ist neue die Funktion `preempt`in `scheduler.rs`. Diese Funktion soll bei jedem Tick aus der ISR vom PIT aufgerufen werden und eine erzwungene Threadumschaltung durchführen. Somit entspricht eine Zeitscheibe einem Tick.  
 
 Zusätzliche müssen die Methoden des Schedulers mithilfe von Interrupt-Sperren gegenüber dem PIT synchronisiert werden. Ansonsten kann es sein, dass die Ready-Queue kaputt geht, wenn in einem ungünstigen Augenblick `preempt`aufgerufen wird.
 
 Zudem muss sichergestellt werden, dass der Scheduler fertig initialisiert ist, bevor das erste Mal `preempt`versucht umzuschalten. Dies ist in der Vorgabe bereits realsierit. Der Idel-Thread setzt die Variable `initialized` auf `true`, sobald er erstmalig losläuft.
 
-In folgender Datei muss Code implementiert werden: `kernel/threads/scheduler.rs`.
+Zuletzt muss in `kernel/threads/thread.asm` in den beiden Assembler-Funktionen `_thread_start`und `_thread_switch` am Ende vor der `ret`-Instruktion ein `sti` eiongefuegt werden, damit die Interrupts wieder zugelassen werden. 
 
+In folgenden Dateien muss Code implementiert werden: `kernel/threads/scheduler.rs`, `kernel/threads/thread.asm` und `devices/pit.rs`.
 
 ## A5.4: Testanwendung mit Multithreading
 Testen Sie das präemptive Multitasking indem Sie eine kleine Demo-Anwendung schreiben in der ein Zähler-Thread läuft, welcher einen Zähler inkrementiert und an einer festen Position auf dem Bildschirm ausgibt. Zusätzlich soll noch ein zweiter Thread erzeugt werden der eine Melodie abspielt. Neben diesen beiden Threads soll zusätzlich der Fortschritt der Systemzeit im Interrupt ausgegeben werden, siehe nachstehende Abbildung.

@@ -104,7 +104,6 @@ impl PIT {
       /* Hier muss Code eingefuegt werden */
 
 
-      // Bei jedem Tick einen Threadwechsel ausloesen.
       
       // intdispatcher entsperren, sonst gibt es einen Deadlock
       // (wir kehren vorerst nicht zurueck)
@@ -115,6 +114,8 @@ impl PIT {
       unsafe {
 	     scheduler::SCHEDULER.force_unlock();
       }
+
+      // Bei jedem Tick einen Threadwechsel ausloesen.
       scheduler::SCHEDULER.lock().preempt();
    }
    

@@ -94,8 +94,28 @@ impl PIT {
     *****************************************************************************/
    pub fn plugin (&mut self) {
 
-       /* Hier muss Code eingefuegt werden */
+      // Systemzeit erhoehen
+      /* Hier muss Code eingefuegt werden */
 
+      // Alle 100 Ticks den Uhrzeiger rechts oben in der Ecke etwas
+      // weiter drehen. Bei einer Unterbrechungsfrequenz von 100 Herz
+      // bewegt er sich dann etwa im Sekunden Rhythmus.
+     
+      /* Hier muss Code eingefuegt werden */
+
+
+      // Bei jedem Tick einen Threadwechsel ausloesen.
+      
+      // intdispatcher entsperren, sonst gibt es einen Deadlock
+      // (wir kehren vorerst nicht zurueck)
+      intdispatcher::force_unlock();    
+      
+      // Auch den Scheduler sicherheitshalber entsperren, um Dedlocks
+      // zu vermeiden
+      unsafe {
+	     scheduler::SCHEDULER.force_unlock();
+      }
+      scheduler::SCHEDULER.lock().preempt();
    }
    
 }

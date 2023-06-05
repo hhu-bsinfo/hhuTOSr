@@ -1,48 +1,24 @@
-# Aufgabe 5: Preemptives Multithreading
+# Aufgabe 6: Semaphore
 
 ## Lernziele
-1. Tieferes Verständnis von präemptiven Multitasking
-2. CPU-Entzug mithilfe des PIT
-3. Synchronisierung des Schedulers und des Allokators gegenüber dem PIT-Interrupt
+1. Verstehen wie Semaphoren implementiert werden und damit Thread-Synchronisierung funktioniert
+2. Erweitern des Schedulers sowie der Thread-Zustände, um Blockieren und Deblockieren zu realisieren
 
 
-## A5.1: Programmable Interval Timer (PIT)
-Der PIT wird ab sofort verwendet, um eine Systemzeit sowie ein erzwungenes Umschalten zwischen Threads zu realisieren. Die Systemzeit wird in der Variable `systime` (in `pit.rs`) gespeichert und diese wird bei jedem Interrupt für den PIT inkrementiert. Verwenden Sie hierfür im PIT den Channel 0 und Modus 3 und laden Sie den Zähler mit einem passenden Wert, sodass der PIT alle 10ms ein Interrupt ausgelöst. Jeder Interrupt verursacht also eine Inkrementierung und entspricht einem Tick (10ms). Somit zeigt `systime` an, wie viele Ticks seit dem Beginn der Zeiterfassung
-vergangen sind. 
+## A6.1: Synchronisierung mit Interrupt-Sperre
+Erweitern Sie das Testprogramm aus A5.4, indem Sie zwei oder drei Threads starten, welche jeweils einen Zähler an einer festen Position auf dem Bildschirm ausgeben. Zusätzlich soll ein weiterer Thread eine Melodie über den Lautsprecher abspielen.
 
-Geben Sie im Interrupt-Handler des PIT den Fortschritt der Systemzeit an einer festen Stelle aus, jedoch nicht bei jedem Tick, sondern nur alle 100 Ticks. Verwenden Sie hierfür beispielsweise die rechte obere Ecke und folgende Zeichen |, /, -, \, wobei das Zeichen bei jeder Ausgabe wechselt. Dadurch, dass ein Zeichenausgabe nur alle 100 Ticks erfolgt, ändert sich das Zeichen ungefähr jede Sekunde. 
-
-Testen Sie die Klasse `PIT` indem Sie die ISR für den PIT in `startup` registrieren und die Ausgabe der Systemzeit überprüfen. Die Systemzeit (in Ticks) wird in `pit.rs` realisert. 
-
-In folgenden Dateien muss Code implementiert werden: `devices/pit.rs` und `startup.rs`.
-
-## A5.2: Umbau des Treibers für den PC-Lautsprecher
-Die `delay` Funktion im Treiber für den PC-Lautsprecher hat bisher den PIT direkt programmiert und soll nun die Systemzeit aus A5.1 nutzen. Hierzu soll eine Busy-Waiting-Schleife verwendet werden, welche stoppt, wenn die `systime` entsprechend der gewünschten Verzögerung fortgeschritten ist. Busy-Waiting ist nicht schön, aber durch das präemptive Multithreading akzeptabel. 
-
-Testen Sie den Umbau mit einer der Melodien.
-
-In folgender Datei muss Code implementiert werden: `devices/pcspk.rs`.
-
-## A5.3 Synchronisierung des Allokators gegenüber Interrupts
-Die Allokation und Freigabe von Speicher muss gegenüber Interrupts und preemptive Thread-Umschaltungen synchronisiert werden. Ansonsten kann es passieren, dass unser System hängt, wenn der der Allokator gesperrt ist und in einem Interrupt-Handler versucht wird Speicher zu allozieren (siehe auch Vorlesung).
-
-Aus diesem Grund müssen die Funktionen zum Allozieren und Freigeben von Speicher mit Interrupt-Sperren genschützt werden.
-
-## A5.4 Threadumschaltung mithilfe des PIT
-In der Vorgabe ist neue die Funktion `preempt`in `scheduler.rs`. Diese Funktion soll bei jedem Tick aus der ISR vom PIT aufgerufen werden und eine erzwungene Threadumschaltung durchführen. Somit entspricht eine Zeitscheibe einem Tick.  
-
-Zusätzlich müssen die Funktionen des Schedulers mithilfe von Interrupt-Sperren gegenüber dem PIT synchronisiert werden. Ansonsten kann es sein, dass die Ready-Queue kaputt geht, wenn in einem ungünstigen Augenblick `preempt`aufgerufen wird.
-
-Zudem muss sichergestellt werden, dass der Scheduler fertig initialisiert ist, bevor das erste Mal `preempt`versucht umzuschalten. Dies ist in der Vorgabe bereits realsierit. Der Idel-Thread setzt die Variable `initialized` auf `true`, sobald er erstmalig losläuft.
-
-Zuletzt muss in `kernel/threads/thread.asm` in den beiden Assembler-Funktionen `_thread_start`und `_thread_switch` am Ende vor der `ret`-Instruktion ein `sti` eiongefuegt werden, damit die Interrupts wieder zugelassen werden. 
-
-In folgenden Dateien muss Code implementiert werden: `kernel/threads/scheduler.rs`, `kernel/threads/thread.asm` und `devices/pit.rs`.
-
-## A5.5: Testanwendung mit Multithreading
-Testen Sie das präemptive Multitasking indem Sie eine kleine Demo-Anwendung schreiben in der ein Zähler-Thread läuft, welcher einen Zähler inkrementiert und an einer festen Position auf dem Bildschirm ausgibt. Zusätzlich soll noch ein zweiter Thread erzeugt werden der eine Melodie abspielt. Neben diesen beiden Threads soll zusätzlich der Fortschritt der Systemzeit im Interrupt ausgegeben werden, siehe nachstehende Abbildung.
+Sie sollten dann beobachten können, dass die Ausgabe der Zähler nicht wie geplant funktioniert. Überlegen Sie warum dies so ist und synchronisieren Sie die Text-Ausgaben in den Threads durch einen kritischen Abschnitt, den Sie mithilfe von Interrupt-Sperren realisieren.
+ 
+*Achtung: Das Sperren von Interrupts zu Synchronisierungszwecken funktioniert nur auf einem Einkern-BS!*
 
 
-**Beispielausgab des Testprogramms**
+## A6.2: Semaphore
+Unser Betriebssystem soll nun um Semaphore erweitert werden, mit denen Threads sich gegenseitig synchronisieren können, ohne Interrupts zu sperrern. Hierfür muss die Klasse `lib/Semaphore` implementiert werden. Jedes Semaphore-Objekt hat eine Warteschlange, in der Threads verwaltet werden, die blockiert sind, weil sie auf einen `v`-Aufruf für diese Semaphore warten. Die Methoden `p`und `v`müssen atomar ausgeführt werden, was mithilfe der Klasse  `lib/Spinlock` realisiert werden soll. Die Klasse `lib/Spinlock` ist in der Vorgabe fertig implementiert und bietet objekt-orientierte Sperren an, basierend auf der atomaren Maschineninstruktion `cmpxchg`. 
 
-![MTHR](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-5/img/mthr.jpg)
+Zusätzlich muss der bestehende Scheduler um die Methoden `block` und `deblock` erweitert werden. In der Methode `block`soll auf den nächsten Thread umgeschaltet werden. Der aktuelle Thread soll nicht mehr in die `readyQueue` des Schedulers eingefügt werden, sondern wird in der Warteschlange der Semaphore verwaltet. In der Methode `deblock` soll der Thread der deblockiert werden soll, wieder in die `readyQueue` des Schedulers eingefügt werden. Wichtig ist, dass 
+`block` und `deblock`, wie die anderen Methoden des Schedulers, gegenüber den Interrupts synchronisiert werden, da hier die `readyQueue` verändert wird.
+
+Synchronisieren Sie die Zähler-Threads im Testprogramm aus A6.1 nun mithilfe eines Semaphor-Objektes. 
+
+In folgenden Dateien muss Code implementiert werden: `lib/Semaphore.cc`, `kernel/Scheduler.cc`, `user/aufgabe6/SemaphoeDemo`und `user/aufgabe6/SemaLoopThread.cc`. 

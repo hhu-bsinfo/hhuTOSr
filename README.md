@@ -21,4 +21,4 @@ Zusätzlich muss der bestehende Scheduler um die Methoden `block` und `deblock` 
 
 Synchronisieren Sie die Zähler-Threads im Testprogramm aus A6.1 nun mithilfe eines Semaphor-Objektes. 
 
-In folgenden Dateien muss Code implementiert werden: `lib/Semaphore.cc`, `kernel/Scheduler.cc`, `user/aufgabe6/SemaphoeDemo`und `user/aufgabe6/SemaLoopThread.cc`. 
+In folgenden Dateien muss Code implementiert werden: `lib/Semaphore.rs`, `kernel/Scheduler.rs`, `user/aufgabe6/SemaphorDemo.rs`und `user/aufgabe6/SemaLoopThread.rs`. 

@@ -3,7 +3,7 @@
 ## Lernziele
 1. Tieferes Verständnis von präemptiven Multitasking
 2. CPU-Entzug mithilfe des PIT
-3. Synchronisierung des Schedulers gegenüber dem PIT-Interrupt
+3. Synchronisierung des Schedulers und des Allokators gegenüber dem PIT-Interrupt
 
 
 ## A5.1: Programmable Interval Timer (PIT)
@@ -23,11 +23,15 @@ Testen Sie den Umbau mit einer der Melodien.
 
 In folgender Datei muss Code implementiert werden: `devices/pcspk.rs`.
 
+## A5.3 Synchronisierung des Allokators gegenüber Interrupts
+Die Allokation und Freigabe von Speicher muss gegenüber Interrupts und preemptive Thread-Umschaltungen synchronisiert werden. Ansonsten kann es passieren, dass unser System hängt, wenn der der Allokator gesperrt ist und in einem Interrupt-Handler versucht wird Speicher zu allozieren (siehe auch Vorlesung).
 
-## A5.3 Threadumschaltung mithilfe des PIT
+Aus diesem Grund müssen die Funktionen zum Allozieren und Freigeben von Speicher mit Interrupt-Sperren genschützt werden.
+
+## A5.4 Threadumschaltung mithilfe des PIT
 In der Vorgabe ist neue die Funktion `preempt`in `scheduler.rs`. Diese Funktion soll bei jedem Tick aus der ISR vom PIT aufgerufen werden und eine erzwungene Threadumschaltung durchführen. Somit entspricht eine Zeitscheibe einem Tick.  
 
-Zusätzliche müssen die Methoden des Schedulers mithilfe von Interrupt-Sperren gegenüber dem PIT synchronisiert werden. Ansonsten kann es sein, dass die Ready-Queue kaputt geht, wenn in einem ungünstigen Augenblick `preempt`aufgerufen wird.
+Zusätzlich müssen die Funktionen des Schedulers mithilfe von Interrupt-Sperren gegenüber dem PIT synchronisiert werden. Ansonsten kann es sein, dass die Ready-Queue kaputt geht, wenn in einem ungünstigen Augenblick `preempt`aufgerufen wird.
 
 Zudem muss sichergestellt werden, dass der Scheduler fertig initialisiert ist, bevor das erste Mal `preempt`versucht umzuschalten. Dies ist in der Vorgabe bereits realsierit. Der Idel-Thread setzt die Variable `initialized` auf `true`, sobald er erstmalig losläuft.
 
@@ -35,7 +39,7 @@ Zuletzt muss in `kernel/threads/thread.asm` in den beiden Assembler-Funktionen `
 
 In folgenden Dateien muss Code implementiert werden: `kernel/threads/scheduler.rs`, `kernel/threads/thread.asm` und `devices/pit.rs`.
 
-## A5.4: Testanwendung mit Multithreading
+## A5.5: Testanwendung mit Multithreading
 Testen Sie das präemptive Multitasking indem Sie eine kleine Demo-Anwendung schreiben in der ein Zähler-Thread läuft, welcher einen Zähler inkrementiert und an einer festen Position auf dem Bildschirm ausgibt. Zusätzlich soll noch ein zweiter Thread erzeugt werden der eine Melodie abspielt. Neben diesen beiden Threads soll zusätzlich der Fortschritt der Systemzeit im Interrupt ausgegeben werden, siehe nachstehende Abbildung.
 
 

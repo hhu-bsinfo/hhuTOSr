@@ -13,6 +13,4 @@ Sie sollten dann beobachten können, dass die Ausgabe der Zähler nicht wie gepl
 
 
 ## A6.2: Mutex
-Rust bietet in der Laufzeitumgebung eine Implementierung für Sperren (Mutex). Synchronisieren Sie die Zähler-Threads im Testprogramm aus A6.1 nun mithilfe eines Rust-Mutex, siehe auch hier:
-
-[https://doc.rust-lang.org/std/sync/struct.Mutex.html](url)
+Rust bietet in der Laufzeitumgebung eine Implementierung für Sperren (Mutex). Synchronisieren Sie die Zähler-Threads im Testprogramm aus A6.1 nun mithilfe eines Rust-Mutex. Weitere Informationen dazu finden Sie [hier](https://doc.rust-lang.org/std/sync/struct.Mutex.html).

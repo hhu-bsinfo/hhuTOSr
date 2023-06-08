@@ -21,7 +21,7 @@ struct Dispatcher {
 pub struct Scheduler {
    active: *mut thread::Thread,
    ready_queue: queue::Queue<Box<thread::Thread>>,   // auf die CPU wartende Threads
-   next_thread_id: u64,
+   next_thread_id: u64, // wird zur Vergabe von Thread-IDs verwendet
 }
 
 // Notwendig, da sonst der Compiler 'SCHEDULER' als nicht akzeptiert
@@ -34,15 +34,16 @@ impl Scheduler {
    pub const fn new() -> Self {
    
       /* Hier muss Code eingefuegt werden */
+      /* next_thread_id mit 0 initialisieren */
       
    }
 
 
-   // ID fuer neuen Thread zurueckgeben
-   pub fn get_next_tid (&mut self) -> u64 {
-
-      /* Hier muss Code eingefuegt werden */
-
+   // ID fuer einen neuen Thread zurueckgeben 
+   // (wird nur in 'ready' genutzt
+   fn get_next_tid (&mut self) -> u64 {
+      self.next_thread_id = self.next_thread_id + 1;
+      self.next_thread_id-1
    }
    
    

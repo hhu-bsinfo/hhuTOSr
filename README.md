@@ -17,4 +17,5 @@ Rust bietet in der Laufzeitumgebung eine Implementierung für Sperren (Mutex). S
 
 
 **Beispielausgabe des Testprogramms**
+
 ![Loops](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-6/img/screen.jpg)

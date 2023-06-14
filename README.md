@@ -5,7 +5,7 @@
 
 
 ## A6.1: Synchronisierung mit Interrupt-Sperre
-Erweitern Sie das Testprogramm aus A5.4, indem Sie zwei oder drei Threads starten, welche jeweils einen Zähler an einer festen Position auf dem Bildschirm ausgeben, siehe Bild unten. Zusätzlich soll ein weiterer Thread eine Melodie über den Lautsprecher abspielen.
+Erweitern Sie das Testprogramm aus A5.4, indem Sie zwei oder zwei Threads starten, welche jeweils einen Zähler an einer festen Position auf dem Bildschirm ausgeben, siehe Bild unten. Zusätzlich soll ein weiterer Thread eine Melodie über den Lautsprecher abspielen.
 
 Sie sollten dann beobachten können, dass die Ausgabe der Zähler nicht wie geplant funktioniert. Überlegen Sie warum dies so ist und synchronisieren Sie die Text-Ausgaben in den Threads durch einen kritischen Abschnitt, den Sie mithilfe von Interrupt-Sperren realisieren.
  
@@ -13,7 +13,8 @@ Sie sollten dann beobachten können, dass die Ausgabe der Zähler nicht wie gepl
 
 
 ## A6.2: Mutex
-Rust bietet in der Laufzeitumgebung eine Implementierung für Sperren (Mutex). Synchronisieren Sie die Zähler-Threads im Testprogramm aus A6.1 nun mithilfe eines Rust-Mutex. Weitere Informationen dazu finden Sie [hier](https://doc.rust-lang.org/std/sync/struct.Mutex.html).
+In der Vorgabe finden Sie eine Implementierung für einen Spinlock in `mylib/spinlock.rs`. Synchronisieren Sie die Zähler-Threads im Testprogramm aus A6.1 nun mithilfe dieses Spinlocks. Hierfür muss der Spinlock in beiden Threads schreibend zugegriffen werden. Lesen Sie hierzu folgende Seiten durch: Shared Ownership mit [Shared Ownership](https://doc.rust-lang.org/rust-by-example/std/arc.html) und [Shared-State Concurrency](https://doc.rust-lang.org/book/ch16-03-shared-state.html) 
+
 
 
 **Beispielausgabe des Testprogramms**

@@ -5,7 +5,7 @@
  *---------------------------------------------------------------------------*
  * Beschreibung:    Programmable Interval Timer.                             *
  *                                                                           *
- * Autor:           Michael Schoettner, HHU, 18.5.2023                       *
+ * Autor:           Michael Schoettner, HHU, 15.6.2023                       *
  *****************************************************************************/
 #![allow(dead_code)]
 
@@ -88,13 +88,35 @@ impl PIT {
    /*****************************************************************************
     * Funktion:        plugin                                                   *
     *---------------------------------------------------------------------------*
-    * Beschreibung:    Unterbrechungen fuer den PIT erlauben. Ab sofort wird    *
-    *                  bei einem Timer-Interrupt die Funktion 'trigger'         *
-    *                  aufgerufen.                                              *
+    * Beschreibung:    Zeitintervall mithilfe von 'interval' einstellen, ISR    *
+    *                  beim Interrupt-Dispatcher registrieren und den Timer-IRQ *
+    *                  beim PIC freischalten.                                   *
     *****************************************************************************/
    pub fn plugin (&mut self) {
+		 
+      /* Hier muss Code eingefuegt werden */
+      
+	 }
+}
 
-      // Systemzeit erhoehen
+
+/*****************************************************************************
+ * Implementierung: ISR                                                      *
+ *****************************************************************************/
+struct PitISR;
+impl isr::ISR for PitISR {
+
+   /*****************************************************************************
+    * Funktion:        trigger                                                  *
+    *---------------------------------------------------------------------------*
+    * Beschreibung:    ISR fuer den Zeitgeber. Wird aufgerufen, wenn der        * 
+    *                  Zeitgeber eine Unterbrechung ausloest. Hier sollte die   *
+    *                  Anzeige der Uhr aktualisiert werden und ein Thread-      *
+    *                  mithilfe von preempt durchgefuehrt werden.               *
+    *****************************************************************************/
+   fn trigger(&self)  {
+
+    // Systemzeit erhoehen
       /* Hier muss Code eingefuegt werden */
 
       // Alle 100 Ticks den Uhrzeiger rechts oben in der Ecke etwas
@@ -119,26 +141,4 @@ impl PIT {
       scheduler::SCHEDULER.lock().preempt();
    }
    
-}
-
-
-/*****************************************************************************
- * Implementierung: ISR                                                      *
- *****************************************************************************/
-struct PitISR;
-impl isr::ISR for PitISR {
-
-   /*****************************************************************************
-    * Funktion:        trigger                                                  *
-    *---------------------------------------------------------------------------*
-    * Beschreibung:    ISR fuer den Zeitgeber. Wird aufgerufen, wenn der        * 
-    *                  Zeitgeber eine Unterbrechung ausloest. Anzeige der Uhr   *
-    *                  aktualisieren und Thread wechseln durch Setzen der       *
-    *                  Variable 'threadSwitch', wird in 'int_disp' behandelt.   *
-    *****************************************************************************/
-   fn trigger(&self)  {
-
-       /* Hier muss Code eingefuegt werden */
-      
-   }
 }

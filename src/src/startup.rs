@@ -27,7 +27,7 @@ fn check_graphics_mode(mbi: u64) -> bool {
 	     return false;
       }
    
-      let addr   = * ((mbi + 88) as *mut u64);
+      let addr   = * ((mbi + 88) as *mut u32) as u64;
       let pitch  = * ((mbi + 96) as *mut u32);
       let width  = * ((mbi + 100) as *mut u32);
       let height = * ((mbi + 104) as *mut u32);

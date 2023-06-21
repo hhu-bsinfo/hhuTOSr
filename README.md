@@ -1,22 +1,35 @@
-# Aufgabe 6: Semaphore
+# Aufgabe 7: Eine eigene BS-Erweiterung / Anwendung
 
 ## Lernziele
-1. Verstehen wie Synchronisierung zwischen Threads in Rust funktioniert
+1. Eine Anwendung schreiben
+2. Alternativ eine Betriebssystem-Komponente entwickeln
+
+## Mögliche Themenrichtunge
+- Grafikdemo (multithreaded)
+- Retro-Spiel (z.B. Snake, Pacman, ...)
+- einfache Shell (Beispiele für Befehle: clear, time, meminfo, ...) 
+- Scheduler mit Prioriäten (mit einer Demo)
 
 
-## A6.1: Synchronisierung mit Interrupt-Sperre
-Erweitern Sie das Testprogramm aus A5.4, indem Sie zwei oder zwei Threads starten, welche jeweils einen Zähler an einer festen Position auf dem Bildschirm ausgeben, siehe Bild unten. Zusätzlich soll ein weiterer Thread eine Melodie über den Lautsprecher abspielen.
+## Vorgabe
+Die Dateien in der Vorgabe umfassen einige Dateien, um einen Grafikmodus nutzen zu können. Die Vorgabe ist nur notwendig, sofern Sie im Grafikmodus arbeiten möchten.
 
-Sie sollten dann beobachten können, dass die Ausgabe der Zähler nicht wie geplant funktioniert. Überlegen Sie warum dies so ist und synchronisieren Sie die Text-Ausgaben in den Threads durch einen kritischen Abschnitt, den Sie mithilfe von Interrupt-Sperren realisieren.
- 
-*Achtung: Das Sperren von Interrupts zu Synchronisierungszwecken funktioniert nur auf einem Einkern-BS!*
+### Grafikfunktionen 
+Vorhanden sind nur sehr grundlegende Grafik-Funktionen, inkl. einer Text-Ausgabe mit einer Schriftart. Weitere Funktionen sollen je nach Anwendung ergänzt werden. 
 
+Ob das System im Grafik- oder Textmodus startet wird in `boot/boot.asm`durch die die Konstante `TEXT_MODE` festgelegt. Wenn diese Konstante aukommentiert wird, so schaltet `grub` direkt in den Grafikmodus (800x600 mit 32 Bit pro Pixel). Eine alternative Grafikauflösung kann durch die Konstanten `MULTIBOOT_GRAPHICS_*` in  `boot/boot.asm` eingestellt werden. Mögliche Auflösungen sollten sich an dem VESA-Standard orientieren, siehe hier: https://en.wikipedia.org/wiki/VESA_BIOS_Extensions
 
-## A6.2: Mutex
-In der Vorgabe finden Sie eine Implementierung für einen Spinlock in `mylib/spinlock.rs`. Synchronisieren Sie die Zähler-Threads im Testprogramm aus A6.1 nun mithilfe dieses Spinlocks. Hierfür muss der Spinlock in beiden Threads schreibend zugegriffen werden. Lesen Sie hierzu folgende Seiten durch: Shared Ownership mit [Shared Ownership](https://doc.rust-lang.org/rust-by-example/std/arc.html) und [Shared-State Concurrency](https://doc.rust-lang.org/book/ch16-03-shared-state.html) 
+Die Textausgabe über CGA funktioniert nicht im Grafikmodus! Damit die Textausgaben wieder erscheinen muss in `Globals` die Variable `kout`auf `VGA_Stream`umgestellt werden, siehe Vorgabe.
 
+Zum Testen ist eine kleine Demo in `user/aufgabe7/GraphicDemo.cc`, siehe auch nachstehendes Bild. 
 
+Folgende Dateien sind für die Grafik-Unterstützung in der Vorgabe:
+- `VGA`: Zeichenfunktionen
+- `VGA_Stream`: Textausgabe über den Stream-Operator `<<` im Grafikmodus 
+- `Globals.cc`: `kout` für  `VGA_Stream`
+- `fonts/*`: Bitmap-Fonts für die Textausgabe im Grafikmodus
+- `user/aufgabe7/GraphicDemo`: Zeigt Ausgaben im Grafikmodus
 
-**Beispielausgabe des Testprogramms**
+**Beispielausgabe der Grafikdemo**
 
-![Loops](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-6/img/screen.jpg)
+![GD](https://github.com/hhu-bsinfo/hhuTOSc/blob/aufgabe-7/img/graphic.jpg)

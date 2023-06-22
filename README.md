@@ -20,6 +20,8 @@ Vorhanden sind nur sehr grundlegende Grafik-Funktionen, inkl. einer Text-Ausgabe
 Ob das System im Grafik- oder Textmodus startet wird in `boot/boot.asm`durch die die Konstante `TEXT_MODE` festgelegt. Wenn diese Konstante aukommentiert wird, so schaltet `grub` direkt in den Grafikmodus (800x600 mit 32 Bit pro Pixel). Eine alternative Grafikauflösung kann durch die Konstanten `MULTIBOOT_GRAPHICS_*` in  `boot/boot.asm` eingestellt werden. Mögliche Auflösungen sollten sich an dem VESA-Standard orientieren, siehe hier: https://en.wikipedia.org/wiki/VESA_BIOS_Extensions
 
 Die Textausgabe über CGA funktioniert nicht im Grafikmodus! Ein Beispiel für die Textausgabe befindet sich in der Vorgabe in `user/aufgabe7/graphic_demo.rs`, siehe auch nachstehendes Bild. 
+Damit das Debugging etwas einfach wird kann man Ausgaben ueber die serielle Schnittstelle nutzen. Dazu gibt es in den Vorgaben die Dateien `devices/serial.rs`und `devices/kprint.rs`. 
+Wenn man diese einbindet und im Makefile qemu mit dem zusaetzlichen Flag `-serial stdio` startet, sieht man die Ausgaben von `kprint` im Terminal, von dem aus qemu aufgerufen wurde.
 
 Folgende Dateien sind für die Grafik-Unterstützung in der Vorgabe:
 - `boot/boot.asm`: kleines Update, damit der Zeiger auf die Multibootinfos richtig nach `startup` übergeben werden

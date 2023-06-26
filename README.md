@@ -1,8 +1,7 @@
-# Aufgabe 6: Semaphore
+# Aufgabe 6: Synchronisierung
 
 ## Lernziele
-1. Verstehen wie Semaphoren implementiert werden und damit Thread-Synchronisierung funktioniert
-2. Erweitern des Schedulers sowie der Thread-Zustände, um Blockieren und Deblockieren zu realisieren
+1. Verstehen wie ein Spinlock funktioniert
 
 
 ## A6.1: Synchronisierung mit Interrupt-Sperre

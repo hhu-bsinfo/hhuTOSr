@@ -30,7 +30,7 @@ Folgende Dateien sind für die Grafik-Unterstützung in der Vorgabe:
 - `startup.rs`: Auslesen der Framebuffer-Infos, fuer `vga.rs`
 - `user/aufgabe7/graphic_demo.rs`: Kleine Grafikdemo, siehe auch Bild unten
 - `user/aufgabe7/bmp_hhu.rs`: HHU-Logo als Bitmap
-- `cbmp2rs`: kleines C-Programm zum Konvertieren von Bildern, gespeichert von GIMP als C-Source, siehe auch `Fonts.pdf`.
+- `cbmp2rs`: kleines C-Programm zum Konvertieren von Bildern, gespeichert von GIMP als C-Source, siehe auch `Graphics-Rust.pdf`.
 
 
 **Beispielausgabe der Grafikdemo**

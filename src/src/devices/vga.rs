@@ -8,12 +8,12 @@
  *                  Informationen werden in startup.rs ausgelesen und hier   *
  *                  genutzt.                                                 *
  *                                                                           *
- * Autor:           Michael Schoettner, HHU, 19.6.2023                       *
+ * Autor:           Michael Schoettner, HHU, 26.6.2023                       *
  *****************************************************************************/
 #![allow(dead_code)]
 
 use alloc::{boxed::Box};
-use crate::devices::fonts::font_8x8 as font_8x8;
+use crate::devices::fonts::font_8x8;
 
 
 // Global VGA struct
@@ -34,6 +34,16 @@ pub fn draw_string(x: u32, y:u32, col:u32, string: &str) {
 	     return ;
 	  }
       VGA.as_ref().unwrap().draw_string(x, y, col, string);
+   }	
+}
+
+pub fn draw_bitmap (x: u32, y: u32, width: u32, height: u32, 
+                    bitmap: &[u8], bpp: u32 ) {
+   unsafe {
+      if VGA.is_none() {
+	     return ;
+	  }
+      VGA.as_ref().unwrap().draw_bitmap(x, y, width, height, bitmap, bpp);
    }	
 }
 
@@ -81,6 +91,47 @@ impl VGA {
 			                height: h, bpp: b
 			               } );
 	   }
+   }
+
+
+   /*****************************************************************************
+    * Funktion:        draw_bitmap                                              *
+    *---------------------------------------------------------------------------*
+    * Parameter:       x,y     Startpunkt ab dem Bitmap ausgegeben wird.        *
+    *                  width   Breite der Bitmap in Pixel                       *
+    *                  height  Hoehe der Bitmap in Pixel                        *
+    *                  bitmap  Zeiger auf Pixel der Bitmap                      *
+    *                  bpp     Bits per Pixel der Bitmap                        *
+    *                                                                           *
+    * Beschreibung:    Gibt die gegebene Rastergrafik an der Position           *
+    *                  x,y zeilenweise aus. (x,y) ist der linke obere Punkt;    *
+    *****************************************************************************/
+   pub fn draw_bitmap (&self, x: u32, y: u32, width: u32, height: u32, 
+                       bitmap: &[u8], bpp: u32 ) {
+      let xpos: u32 = x;
+      let ypos: u32 = y;
+      let mut idx: usize = 0;
+      let mut r: u8;
+      let mut g: u8;
+      let mut b: u8;
+
+      
+      // Pixel ausserhalb des sichtbaren Bereichs?
+      if x >= self.width || y >= self.height {
+          return;
+      }
+
+      // Bitmap zeichnen
+      for y in 0..height {
+         for x in 0..width {
+			r = bitmap[idx]; idx = idx + 1;
+			g = bitmap[idx]; idx = idx + 1;
+			b = bitmap[idx]; idx = idx + 1;
+			
+            self.draw_pixel(xpos + x, ypos + y, rgb_24(r,g,b));
+			 
+         }
+      }
    }
 
 

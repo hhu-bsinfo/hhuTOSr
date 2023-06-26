@@ -1,4 +1,9 @@
 
+
+use core::panic::PanicInfo;
+use devices::kprint;      // used to import code needed by kprintln! 
+
+
 fn aufgabe7() {
     
 	// Idle-Thread anlegen
@@ -27,7 +32,7 @@ fn check_graphics_mode(mbi: u64) -> bool {
 	     return false;
       }
    
-      let addr   = * ((mbi + 88) as *mut u32) as u64;
+      let addr   = * ((mbi + 88) as *mut u64);
       let pitch  = * ((mbi + 96) as *mut u32);
       let width  = * ((mbi + 100) as *mut u32);
       let height = * ((mbi + 104) as *mut u32);
@@ -48,6 +53,17 @@ pub extern fn startup(mbi: u64) {
 	
     // ...
     
-	
+    kprintln!("hhuTOS 0.7");
+    kprintln!("==========" );
+
     loop{}
 }
+
+
+
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    kprintln!("Panic: {}", info);
+    loop {}
+}
+

@@ -5,7 +5,8 @@ use crate::devices::cga_print;     // used to import code needed by println!
 use crate::kernel::threads::thread;
 use crate::kernel::threads::scheduler;
 use crate::devices::vga;
-use crate::devices::fonts::font_8x8 as font_8x8;
+use crate::devices::fonts::font_8x8;
+use crate::user::aufgabe7::bmp_hhu;
 
 
 pub struct GraphicDemo {
@@ -77,9 +78,10 @@ impl thread::ThreadEntry for GraphicDemo {
        vga::draw_string(0, text_h, vga::rgb_24(0,255,0), "==========");
        vga::draw_string(0, 3*text_h, vga::rgb_24(0,255,0), "Wir sind jetzt im Grafikmodus!");
        
-       loop {}
+       vga::draw_bitmap(10, 100, bmp_hhu::WIDTH, bmp_hhu::HEIGHT, bmp_hhu::DATA, bmp_hhu::BPP);
+       
        // Beim exit gibt es noch ein Problem
-       // scheduler::Scheduler::exit(thread_object);  
+       scheduler::Scheduler::exit(thread_object);  
 	}
 
 }

@@ -55,7 +55,7 @@ rust_objs:
 # --------------------------------------------------------------------------
 # System binden
 $(SYSTEM): rust_objs $(OBJPRE) $(LINKER_SCRIPT)
-	@ld -n -T $(LINKER_SCRIPT) -o $(SYSTEM) $(OBJPRE) $(RUST_OBJ)
+	@x86_64-elf-ld -n -T $(LINKER_SCRIPT) -o $(SYSTEM) $(OBJPRE) $(RUST_OBJ)
 
 # --------------------------------------------------------------------------
 # 'bootdisk' erzeugt zunaechst das System, falls das noch nicht geschehen ist.
@@ -66,7 +66,7 @@ bootdisk:
 # --------------------------------------------------------------------------
 # 'qemu' ruft den qemu-Emulator mit dem System auf.
 qemu: $(ISO)
-	@qemu-system-x86_64 -cdrom $(ISO) -soundhw pcspk 
+	@qemu-system-x86_64 -cdrom $(ISO) -audiodev coreaudio,id=snd0 -machine pcspk-audiodev=snd0
 
 # --------------------------------------------------------------------------
 # ISO erstellen

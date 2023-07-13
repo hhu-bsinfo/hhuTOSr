@@ -1,3 +1,4 @@
 /src/build
 /src/target
 /src/Cargo.lock
+.DS_STORE

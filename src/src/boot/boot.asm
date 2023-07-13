@@ -82,7 +82,7 @@ MULTIBOOT_HEADER_CHKSUM	equ	-(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
    MULTIBOOT_GRAPHICS_BPP    equ 32
 %endif
 
-[SECTION .text]
+[SECTION .multiboot_header]
 
 ;
 ;   System-Start, Teil 1 (im 32-bit Protected Mode)

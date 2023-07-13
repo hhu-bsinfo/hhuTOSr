@@ -34,8 +34,8 @@ pub const HEAP_SIZE: usize = 1024 * 1024;        // 1 MB
 
 
 #[global_allocator]
-static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
-//static ALLOCATOR: Locked<LinkedListAllocator> = Locked::new(LinkedListAllocator::new());
+//static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
+static ALLOCATOR: Locked<LinkedListAllocator> = Locked::new(LinkedListAllocator::new());
 
 // init allocator (to be called very early)
 pub fn init() {
@@ -59,6 +59,7 @@ pub fn dealloc(ptr: *mut u8, layout: Layout) {
 }
 
 // dump free list (for debugging)
+#[allow(unused_unsafe)]
 pub fn dump_free_list() {
     unsafe {
         ALLOCATOR.lock().dump_free_list();

@@ -47,7 +47,7 @@ impl BumpAllocator {
 
     // Dump free list
     pub fn dump_free_list(&mut self) {
-        println!("Heap-Start:   {:#x}, Heap-End:  {:#x}", self.start, self.end);
+        println!("\nHeap-Start:   {:#x}, Heap-End:  {:#x}", self.start, self.end);
         println!("Next-Address: {:#x}, free:      {:#x}", self.next, self.end - self.next);
 	}
 

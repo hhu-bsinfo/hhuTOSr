@@ -13,8 +13,8 @@
  *           Globale Variablen: Direkt nach dem Code liegen die globalen     *
  *                              Variablen.                                   *
  *                        Heap:                                              *
- *                    0x300000:	Start-Adresse der Heap-Verwaltung            *
- *                    0x400000: Letzte Adresse des Heaps                     *
+ *                    0x500000:	Start-Adresse der Heap-Verwaltung            *
+ *                    0x600000: Letzte Adresse des Heaps                     *
  *                                                                           *
  * Achtung:         Benötigt einen PC mit mindestens 8 MB RAM!               *
  *                                                                           *
@@ -24,12 +24,12 @@
 
 use crate::kernel::allocator::bump::BumpAllocator;
 use crate::kernel::allocator::list::LinkedListAllocator;
-use alloc::alloc::{Layout};
+use alloc::alloc::Layout;
 
 pub mod bump;
 pub mod list;
 
-pub const HEAP_START: usize = 0x300000;
+pub const HEAP_START: usize = 0x500000;
 pub const HEAP_SIZE: usize = 1024 * 1024;        // 1 MB
 
 

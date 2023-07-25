@@ -95,6 +95,8 @@ behandelt werden. Dies erledigt die Rust-Runtime automatisch, jedoch ist der Par
 In folgenden Dateien müssen Quelltexte einfügt werden: `kernel/allocator/bump.rs` und
 `user/aufgabe2/heap_demo.rs`.
 
+*Achtung: Die Pointer auf einen neu allozierten Speicherblock müssen aligniert werden. Wie die Alignierung aussehen muss steht im Parameter* `layout` *beim Aufruf von* `alloc`*. In* `allocator.rs` *gibt es hierfür die Hilfsfunktion* `align_up`. 
+
 ## A2.2: Listenbasierter Allokator
 In dieser Aufgabe soll ein verbesserter Allokator implementiert werden, welcher freigegeben Speicherblöcke wiederverwenden kann. Hierzu sollen alle freien Blöcke miteinander verkettet werden, siehe Abbildung.
 
@@ -118,6 +120,9 @@ Verwenden/erweitern Sie die Test aus Aufgabe 2.1. Ein Anregung dazu finden Sie a
 In folgenden Dateien müssen Quelltexte einfügt werden: `kernel/allocator/list.rs` und
 `user/aufgabe2/heap_demo.rs`.
 
+*Achtung: Die Pointer auf einen neu allozierten Speicherblock müssen aligniert werden. Wie die Alignierung aussehen muss steht im Parameter* `layout` *beim Aufruf von* `alloc`*. In* `allocator.rs` *gibt es hierfür die Hilfsfunktion* `align_up`. 
+
+
 ## A2.3: PC-Lautsprecher
 In dieser Aufgabe muss die Funktion `delay` implementiert werden. Diese Funktion ist für das Abspielen von Tönen notwendig, die eine gegebene Zeitdauer gespielt werden sollen. Da wir bisher keine Interrupts verarbeiten können und auch keine Systemzeit haben bietet es sich an den Zähler 0 des Programmable Interval Timer (PIT) hierfür zu verwenden. Sie können dann in einer Schleife fortlaufend den aktuellen Zählerstand auslesen, der ja mit 1,19 MHz dekrementiert wird
 und so näherungsweise die Ausführung, eine gegebene Zeit in Millisekunden, verzögern. Dies ist eine unsaubere Lösung die wir später ersetzen werden.
@@ -130,7 +135,7 @@ In folgenden Dateien müssen Quelltexte einfügt werden: `devices/pcspk.rs` un
 
 
 ## Beispielausgaben zur Speicherverwaltung
-Nachstehend sind einige Screenshots zum Testen der Speicherverwaltung. Sie können sich natürlich selbst Testfunktionen und Testausgaben überlegen. Sollten die Ausgaben über mehrere Seiten gehen bietet es sich an eine Zeitverzögerung mit `pcspk.delay` zu realsieren. Dies ist umständlich und nur als vorübergehende Lösung gedacht; später können wir Tastatureingaben verarbeiten ...
+ Nachstehend sind einige Screenshots zum Testen der Speicherverwaltung. Sie können sich natürlich selbst Testfunktionen und Testausgaben überlegen. Sollten die Ausgaben über mehrere Seiten gehen bietet es sich an auf einen Tastendruck mit `keyboard::key_hit()` zu warten.
 
 ![Heap1](https://github.com/hhu-bsinfo/hhuTOSr/blob/aufgabe-2/img/heap1.jpg)
 

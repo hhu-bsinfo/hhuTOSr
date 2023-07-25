@@ -3,13 +3,13 @@
  *                                p c s p k                                  *
  *                                                                           *
  *---------------------------------------------------------------------------*
- * Beschreibung:    Mit Hilfe dieser Klasse kann man Toene auf dem           *
- *                  PC-Lautsprecher ausgeben.                                *
+ * Beschreibung:    Verzoegerung um X ms (in 1ms Schritten; Min. 1ms).       *
+ *                  Da der Counter "nur" 16 Bit hat muss man evt. mehrmals   *
+ *                  herunterzaehlen.                                         *
+ *                  Es empfiehlt sich Mode 2 "rate generator"                *
+ *                                                                           * 
  *                                                                           *
- * Achtung:         Qemu muss mit dem Parameter -soundhw pcspk aufgerufen    *
- *                  werden. Ansonsten kann man nichts hoeren.                *
- *                                                                           *
- * Autor:           Michael Schoettner, HHU, 22.9.2016                       *
+ * Parameter:       time (delay in ms)                                       *
  *****************************************************************************/
 #![allow(dead_code)]
 

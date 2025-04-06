@@ -1,15 +1,13 @@
-;******************************************************************************
-;*                        B O O T . A S M                                     *
-;*----------------------------------------------------------------------------*
-;* Die Funktion 'boot_start' ist der Eintrittspunkt des eigentlichen Systems. *
-;* Die Umschaltung in den 32-bit 'Protected Mode' ist bereits durch grub      *
-;* erfolgt. Es wird alles vorbereitet, damit so schnell wie möglich mit der   * 
-;* Ausführung von C++-Code im 64-bit 'Long Mode' begonnen werden kann.        *
-;* boot.bin wird an 1 MB geladen und konsumiert mit PageTables 1 MB, sodass   *
-;* der C Code oberhalb von 2 MB liegt.                                        *
-;*                                                                            *
-;* Autor: Michael Schoettner, Uni Duesseldorf, 26.2.2023                      *
-;******************************************************************************
+; ╔═════════════════════════════════════════════════════════════════════════╗
+; ║ Module: boot                                                            ║
+; ╟─────────────────────────────────────────────────────────────────────────╢
+; ║ Descr.: grub loads our image at the address 1 MB and switches to 32 bit ║
+; ║         protected mode and jumps to the first function 'start' in this  ║
+; ║         file. We switch to 64 bit long mode and call 'startup', the     ║
+; ║         first rust function.                                            ║
+; ╟─────────────────────────────────────────────────────────────────────────╢
+; ║ Author: Michael Schoettner, Univ. Duesseldorf, 26.2.2023                ║
+; ╚═════════════════════════════════════════════════════════════════════════╝
 
 ;
 ;   Konstanten

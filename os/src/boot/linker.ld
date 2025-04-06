@@ -21,7 +21,7 @@ SECTIONS {
 
     .text :
     {
-        *(.text)
+        *(.text*)
     }
 
    .bss : 

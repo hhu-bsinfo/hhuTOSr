@@ -1,5 +1,7 @@
 # Aufgabe 1: Ein-/Ausgabe
 
+Der Quellcode zum Betriebssystem befindet sich im Unterordner [os](os/). Dort finden Sie auch eine README-Datei mit Anleitungen zum Kompilieren und Starten von hhuTOS.
+
 ## Lernziele
 1. Kennenlernen der Entwicklungsumgebung
 2. Einarbeiten in die Programmiersprache Rust

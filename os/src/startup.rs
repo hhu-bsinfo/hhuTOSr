@@ -44,11 +44,7 @@ fn aufgabe1() {
 pub extern "C" fn startup() {
     kprintln!("Welcome to hhuTOS!");
 
-    cga::CGA.lock().show(0, 0, 'h', cga::CGA_STD_ATTR);
-
 	cga::CGA.lock().clear();
-
-    panic!("This is a test panic!");
 	
     aufgabe1();
     

@@ -54,6 +54,7 @@ pub struct CGA {
 }
 
 impl CGA {
+    /// Create a new CGA instance.
     const fn new() -> CGA {
         CGA {
             index_port: cpu::IoPort::new(CGA_INDEX_PORT),
@@ -61,7 +62,7 @@ impl CGA {
         }
     }
 
-    /// Clear CGA screen.
+    /// Clear CGA screen and set cursor position to (0, 0).
     pub fn clear(&mut self) {
         /* Hier muss Code eingefuegt werden */
     }

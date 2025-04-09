@@ -15,16 +15,13 @@ use crate::devices::key as key;
 use crate::devices::key::Key;
 use crate::kernel::cpu::IoPort;
 
-/// Get last key pressed.
-pub fn key_hit() -> Key {
-    KB.lock().key_hit()
-}
-
 /// Global thread-safe access to keyboard.
-static KB: Mutex<Keyboard> = Mutex::new(Keyboard::new());
+/// Usage: let mut keyboard = keyboard::KEYBOARD.lock();
+///        let key = keyboard.key_hit();
+pub static KEYBOARD: Mutex<Keyboard> = Mutex::new(Keyboard::new());
 
 /// Represents the keyboard.
-struct Keyboard {
+pub struct Keyboard {
     code: u8,       // Keyboard byte
     prefix: u8,     // Keyboard prefix
     gather: Key,    // Last decoded key
@@ -69,7 +66,7 @@ static SCAN_NUM_TAB: [u8; 13] = [  8, 9, 10, 53, 5, 6, 7, 27, 2, 3, 4, 11, 51 ];
 // LED names
 const LED_CAPS_LOCK: u8 = 4;
 const LED_NUM_LOCK: u8 = 2;
-const LED_SCROLL_LOCK:u8 = 1;
+const LED_SCROLL_LOCK: u8 = 1;
 
 // Constants needed for key decoding
 const BREAK_BIT: u8 = 0x80;
@@ -169,13 +166,6 @@ impl Keyboard {
             }
             69 => { // Numlock or Break
                 if self.gather.get_ctrl_left() { // Break Key
-                    // Auf alten Tastaturen konnte die Pause-Funktion wohl nur
-                    // ueber Ctrl+NumLock erreicht werden. Moderne MF-II Tastaturen
-                    // senden daher diese Codekombination, wenn Pause gemeint ist.
-                    // Die Pause Taste liefert zwar normalerweise keinen ASCII-
-                    // Code, aber Nachgucken schadet auch nicht. In jedem Fall ist
-                    // die Taste nun komplett.
-                    
                     // On old keyboards, the Break function could only be reached via
                     // Ctrl+NumLock. Modern MF-II keyboards send this code combination
                     // when Break is meant. The Break key normally does not deliver an
@@ -256,8 +246,10 @@ impl Keyboard {
         }
     }
     
-    fn key_hit(&mut self) -> key::Key {
-        let invalid: key::Key = Default::default();  // nicht explizit initialisierte Tasten sind ungueltig
+    /// Poll the keyboard controller until a key is pressed.
+    /// Decode and return the key if it is complete.
+    pub fn key_hit(&mut self) -> Key {
+        let invalid: Key = Default::default();  // nicht explizit initialisierte Tasten sind ungueltig
 
         /* Hier muss Code eingefuegt werden. */
 
@@ -284,7 +276,15 @@ impl Keyboard {
         invalid
     }
     
-    fn set_repeat_rate (&mut self, speed: u8, delay: u8) {
+    /// Set the repeat rate of the keyboard (determined by the speed and delay).
+    /// 
+    /// The speed determines how fast repeated keys are sent.
+    /// Valid values are between 0 (very fast) and 31 (very slow).
+    /// 
+    /// The delay determines how long a key must be pressed before the keyboard starts repeating it.
+    /// Valid values are between 0 (minimum delay) and 3 (maximum delay).
+    /// 0 = 250ms, 1 = 500ms, 2 = 750ms, 3 = 1000ms
+    pub fn set_repeat_rate(&mut self, speed: u8, delay: u8) {
 
         /* Hier muss Code eingefuegt werden. */
 
@@ -308,7 +308,10 @@ impl Keyboard {
          *****************************************************************************/
     }
     
-    fn set_led(&mut self, led: u8, on: bool) {
+    /// Enable/Disable the LEDs on the keyboard.
+    /// Multiple LEDs can be set at the same time as a bit mask.
+    /// 1 = Caps Lock, 2 = Num Lock, 4 = Scroll Lock
+    pub fn set_led(&mut self, led: u8, on: bool) {
 
         /* Hier muss Code eingefuegt werden. */
         

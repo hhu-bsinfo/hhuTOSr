@@ -36,16 +36,17 @@ use user::aufgabe1::text_demo;
 use user::aufgabe1::keyboard_demo;
 
 fn aufgabe1() {
-   text_demo::run();
-   keyboard_demo::run();
+    text_demo::run();
+    println!("");
+    keyboard_demo::run();
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn startup() {
     kprintln!("Welcome to hhuTOS!");
-
-	cga::CGA.lock().clear();
-	
+    
+    cga::CGA.lock().clear();
+    
     aufgabe1();
     
     loop{}

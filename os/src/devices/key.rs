@@ -42,12 +42,12 @@ impl Key {
     }
 
     /// Invalid keys are represented by a scancode of 0.
-    pub fn valid(&mut self) -> bool {
+    pub fn valid(&self) -> bool {
         self.scan != 0
     }
 
     /// Make the key invalid by setting the scancode to 0.
-    pub fn set_invalidate(&mut self) {
+    pub fn set_invalid(&mut self) {
         self.scan = 0;
     }
 

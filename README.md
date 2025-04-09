@@ -21,7 +21,7 @@ In folgenden Dateien müssen Quelltexte einfügt werden: `startup.rs`, `user/t
 
 ### Beispielausgaben
 
-![CGA](img/cga.jpg)
+![CGA](img/cga.png)
 
 
 ## A1.2: Tastatur

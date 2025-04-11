@@ -109,6 +109,8 @@ impl CGA {
     }
 
     /// Helper function returning an attribute byte for the given parameters `bg`, `fg`, and `blink`
+    /// Note: Blinking characters do not work in QEMU, but work on real hardware.
+    ///       Support for blinking characters is optional and can be removed, if you want.
     pub fn attribute(&mut self, bg: Color, fg: Color, blink: bool) -> u8 {
         /* Hier muss Code eingefuegt werden */
 

@@ -12,14 +12,13 @@ use alloc::{boxed::Box, vec::Vec};
 fn wait_for_return() {
 	
 	println!("");
-	println!("");
-    println!("Weiter mit <ENTER>");
+  println!("Weiter mit <ENTER>");
 
    loop {
       let mut key: key::Key = keyboard::key_hit();
         
       if key.valid() == true {
-		  if key.get_ascii() == 13 { break; }
+		     if key.get_ascii() == 13 { break; }
       }
    }
 }

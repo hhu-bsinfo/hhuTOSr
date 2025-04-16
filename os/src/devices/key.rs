@@ -19,6 +19,7 @@ const KMOD_CAPS_LOCK: u8   = 32;
 const KMOD_NUM_LOCK: u8    = 64;
 const KMOD_SCROLL_LOCK: u8 = 128;
 
+pub const SCAN_ESC: u8 = 0x01;
 pub const SCAN_F1: u8 = 0x3b;
 pub const SCAN_DEL: u8 = 0x53;
 pub const SCAN_UP: u8 = 72;
@@ -54,8 +55,8 @@ impl Key {
     // Functions for manipulating ASCII and scancode of the key
     pub fn set_ascii(&mut self, a: u8) { self.asc = a; }
     pub fn set_scancode(&mut self, s: u8) { self.scan = s; }
-    pub fn get_ascii(&mut self) -> u8 { self.asc }
-    pub fn get_scancode(&mut self) -> u8 { self.scan }
+    pub fn get_ascii(&self) -> u8 { self.asc }
+    pub fn get_scancode(&self) -> u8 { self.scan }
 
     // Functions for manipulating the modifier bits
     pub fn set_shift(&mut self, pressed: bool) {

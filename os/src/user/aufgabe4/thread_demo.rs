@@ -2,7 +2,7 @@ use crate::devices::cga;
 use crate::kernel::threads::scheduler::{get_scheduler, Scheduler};
 use crate::kernel::threads::thread::Thread;
 
-fn thread_entry(thread: &mut Thread) {
+fn thread_entry() {
 
     /* Hier muss Code eingefuegt werden */
 

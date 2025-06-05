@@ -1,5 +1,17 @@
 # Aufgabe 5: Preemptives Multithreading
 
+## UPDATE (05.06.2025)
+Es kann passieren, dass der Allokator gelockt ist, während der PIT einen Thread-Wechsel einleitet. Das würde zu einem Deadlock führen, da das Aus- und Einreihen von Threads Heap-Speicher freigibt, bzw. alloziert.
+
+Fügen Sie die folgende Funktion in `kernel/allocator.rs` ein, mit der überprüft werden kann, ob der Allokator gerade gelockt ist:
+```
+pub fn is_locked() -> bool {
+    ALLOCATOR.inner.is_locked()
+}
+```
+
+In `scheduler::yield_cpu()` können Sie nun nach dem Locken der Ready Queue prüfen, ob der Allokator gelockt ist, und in dem Fall einfach mit `return` den Thread-Wechsel abbrechen.
+
 ## Lernziele
 1. Tieferes Verständnis von präemptiven Multitasking
 2. CPU-Entzug mithilfe des PIT

@@ -29,6 +29,8 @@ Folgende Dateien sind für die Grafik-Unterstützung in der Vorgabe:
 - `startup.rs`: Bekommt jetzt eine Mutltiboot-Referenz als Parameter
 - `devices/lfb.rs`: Zeichenfunktionen im Grafikmodus
 - `devices/font_8x8.rs`: Bitmap-Font für die Textausgabe im Grafikmodus
+- `kernel/cpu.rs`: Erweiterte IO-Port Befehle zum Schreiben von 16-/32-Bit Werten.
+- `kernel/multiboot.rs`: Struct-Definition für Bootloader-Daten, die gemäß des [Multiboot](https://www.gnu.org/software/grub/manual/multiboot/multiboot.html)-Protokolls an den Kernel übergen werden.
 - `user/aufgabe7/graphic_demo.rs`: Kleine Grafikdemo (siehe Bild unten)
 - `user/aufgabe7/bmp_hhu.rs`: HHU-Logo als Bitmap
 - `cbmp2rs.c`: Kleines C-Programm zum Konvertieren von Bildern, gespeichert von GIMP als C-Source, siehe auch `Graphics-Rust.pdf`.

@@ -1,7 +1,18 @@
+/*
+ * Module: serial
+ *
+ * Description: A basic driver for the serial port, only supporting output.
+ *
+ * Author: Michael Schoetter, Heinrich Heine University Duesseldorf, 7.3.2023
+ *         Fabian Ruhland, Heinrich Heine University Duesseldorf, 30.6.2025
+ */
+
 use core::fmt;
 use spin::Mutex;
-use crate::kernel::cpu;
 use crate::kernel::cpu::IoPort;
+
+/// Standard COM port for kernel output via kprint! and kprintln!
+pub static COM1: Mutex<ComPort> = Mutex::new(ComPort::new(ComBaseAddress::Com1));
 
 #[allow(dead_code)]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -31,7 +42,6 @@ impl ComPort {
 /// Implement the `Write` trait for `ComPort`.
 /// This allows us to use `kprint!` and `kprintln!` macros
 impl fmt::Write for ComPort {
-
     /// Write a string to the COM port
     fn write_str(&mut self, s: &str) -> fmt::Result {
         // Iterate over each byte in the string
@@ -49,6 +59,3 @@ impl fmt::Write for ComPort {
         Ok(())
     }
 }
-
-// Standard com-port for kernel output via kprint! and kprintln!
-pub static COM1: Mutex<ComPort> = Mutex::new(ComPort::new(ComBaseAddress::Com1));

@@ -1,13 +1,12 @@
-/* ╔═════════════════════════════════════════════════════════════════════════╗
-   ║ Module: key                                                             ║
-   ╟─────────────────────────────────────────────────────────────────────────╢
-   ║ Descr.: Defines a key consisting of ascii- and scan-code as well as     ║
-   ║         modifiers. In addition helper functions for the modifiers are   ║
-   ║         implemented.                                                    ║
-   ╟─────────────────────────────────────────────────────────────────────────╢
-   ║ Author: Michael Schoetter, Univ. Duesseldorf, 6.2.2024                  ║
-   ╚═════════════════════════════════════════════════════════════════════════╝
-*/
+/* 
+ * Module: key
+ *
+ * Description: Defines a `Key` struct, consisting of ascii- and scan-code as well as modifiers.
+ *              Additionally, it provides helper functions for manipulating the modifiers.
+ *
+ * Author: Michael Schoetter, Heinrich Heine University Duesseldorf, 6.2.2024
+ *         Fabian Ruhland, Heinrich Heine University Duesseldorf, 30.6.2025
+ */
 
 // Modifier bits
 const KMOD_SHIFT: u8       = 1;

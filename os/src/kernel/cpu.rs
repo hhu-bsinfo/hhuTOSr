@@ -1,14 +1,16 @@
-/* ╔═════════════════════════════════════════════════════════════════════════╗
-   ║ Module: cpu                                                             ║
-   ╟─────────────────────────────────────────────────────────────────────────╢
-   ║ Descr.: Different cpu functions are implemented here.                   ║
-   ╟─────────────────────────────────────────────────────────────────────────╢
-   ║ Author: Michael Schoetter, Univ. Duesseldorf, 9.6.2024                  ║
-   ╚═════════════════════════════════════════════════════════════════════════╝
-*/
+/*
+ * Module: cpu
+ *
+ * Description: Contains wrappers for different CPU functions,
+ *              as well as the `IoPort` struct for reading and writing to I/O-ports.
+ *
+ * Author: Michael Schoetter, Heinrich Heine University Duesseldorf, 9.6.2024
+ *         Fabian Ruhland, Heinrich Heine University Duesseldorf, 30.6.2025
+ */
 
 use core::arch::asm;
 
+/// Represents an I/O-port for reading and writing data.
 pub struct IoPort {
     port: u16
 }

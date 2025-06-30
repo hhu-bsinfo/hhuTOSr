@@ -1,6 +1,5 @@
 #[macro_use]
 pub mod kprint;
-
 #[macro_use]
 pub mod cga_print;
 pub mod cga;

@@ -1,17 +1,15 @@
-/* ╔═════════════════════════════════════════════════════════════════════════╗
-   ║ Module: keyboard                                                        ║
-   ╟─────────────────────────────────────────────────────────────────────────╢
-   ║ Descr.: Here are the public functions of all modules implemented in the ║
-   ║         keyboard sub directory.                                         ║
-   ╟─────────────────────────────────────────────────────────────────────────╢
-   ║ Author: Michael Schoetter, Univ. Duesseldorf, 6.2.2024                  ║
-   ╚═════════════════════════════════════════════════════════════════════════╝
-*/
+/* 
+ * Module: keyboard
+ *
+ * Description: This module contains the driver for the PS/2 keyboard.
+ *
+ * Author: Michael Schoetter, Heinrich Heine University Duesseldorf, 6.2.2024
+ *         Fabian Ruhland, Heinrich Heine University Duesseldorf, 30.6.2025
+ */
 
 use spin::Mutex;
 
-use crate::kernel::cpu as cpu;
-use crate::devices::key as key;
+use crate::devices::key;
 use crate::devices::key::Key;
 use crate::kernel::cpu::IoPort;
 
@@ -249,29 +247,9 @@ impl Keyboard {
     /// Poll the keyboard controller until a key is pressed.
     /// Decode and return the key if it is complete.
     pub fn key_hit(&mut self) -> Key {
-        let invalid: Key = Default::default();  // nicht explizit initialisierte Tasten sind ungueltig
+        let invalid: Key = Default::default();
 
         /* Hier muss Code eingefuegt werden. */
-
-        /*****************************************************************************
-         * Funktion:        key_hit                                                  *
-         *---------------------------------------------------------------------------*
-         * Beschreibung:    Diese Methode soll einen Tastendruck zurueckliefern.     *
-         *                  Hierzu soll die Tastatur in einer Schleife "gepollt"     *
-         *                  werden, bis ein Zeichen eingegebn wurde.                 *
-         *                                                                           *
-         *                  Das Byte von der Tastatur soll in dem Attribut 'code'    *
-         *                  (siehe Keyboard.h) gespeichert werden. Die Dekodierung   *
-         *                  soll mithilfe der vorgegebenen Funktion 'key_decoded'    *
-         *                  erfolgen.                                                *
-         *                                                                           *
-         * Rückgabewert:    Wenn der Tastendruck abgeschlossen ist und ein Scancode, *
-         *                  sowie gegebenenfalls ein ASCII-Code emittelt werden      *
-         *                  konnte, werden diese in 'gather' (siehe Keyboard.h)      *
-         *                  zurueckgeliefert. Anderenfalls liefert key_hit () einen  *
-         *                  ungueltigen Wert zurueck, was mit Key::valid ()          *
-         *                  ueberprueft werden kann.                                 *
-         *****************************************************************************/
 
         invalid
     }
@@ -288,24 +266,6 @@ impl Keyboard {
 
         /* Hier muss Code eingefuegt werden. */
 
-        /*****************************************************************************
-         * Funkion:         set_repeat_rate                                          *
-         *---------------------------------------------------------------------------*
-         * Beschreibung:    Einstellen der Wiederholungsrate der Tastatur.           *
-         *                                                                           *
-         * Parameter:                                                                *
-         *      delay:      Bestimmt, wie lange eine Taste gedrueckt werden muss,    *
-         *                  bevor die Wiederholung einsetzt. Erlaubt sind Werte      *
-         *                  zw. 0 (minimale Wartezeit) und 3 (maximale Wartezeit).   *
-         *                  0=250ms, 1=500ms, 2=750ms, 3=1000ms                      *
-         *                                                                           *
-         *      speed:      Bestimmt, wie schnell die Tastencodes aufeinander folgen *
-         *                  sollen. Erlaubt sind Werte zwischen 0 (sehr schnell)     *
-         *                  und 31 (sehr langsam).                                   *
-         *                                                                           *
-         *                  ((2 ^ B) * (D + 8) / 240 sec                             *
-         *                  Bits 4-3 = B; Bits 2-0 = D;                              *
-         *****************************************************************************/
     }
     
     /// Enable/Disable the LEDs on the keyboard.
@@ -314,15 +274,6 @@ impl Keyboard {
     pub fn set_led(&mut self, led: u8, on: bool) {
 
         /* Hier muss Code eingefuegt werden. */
-        
-        /*****************************************************************************
-         * Funktion:        set_led                                                  *
-         *---------------------------------------------------------------------------*
-         * Beschreibung:    Setzt oder loescht die angegebene Leuchtdiode.           *
-         *                                                                           *
-         * Parameter:                                                                *
-         *      led:        Welche LED? (caps_lock, num_lock, scroll_lock)           *
-         *      on:         0 = aus, 1 = an                                          *
-         *****************************************************************************/
+
     }
 }

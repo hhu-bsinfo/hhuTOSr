@@ -1,13 +1,14 @@
-/* ╔═════════════════════════════════════════════════════════════════════════╗
-   ║ Module: cga                                                             ║
-   ╟─────────────────────────────────────────────────────────────────────────╢
-   ║ Descr.: This module provides functions for doing output on the CGA text ║
-   ║         screen. It also supports a text cursor position stored in the   ║
-   ║         hardware using ports.                                           ║
-   ╟─────────────────────────────────────────────────────────────────────────╢
-   ║ Author: Michael Schoetter, Univ. Duesseldorf, 6.2.2024                  ║
-   ╚═════════════════════════════════════════════════════════════════════════╝
-*/
+/* 
+ * Module: cga
+ *
+ * Description: This module provides functions for doing output on the CGA text screen.
+ *              It also supports a text cursor position stored in the hardware using ports.
+ *
+ * Author: Michael Schoetter, Heinrich Heine University Duesseldorf, 6.2.2024
+ *         Fabian Ruhland, Heinrich Heine University Duesseldorf, 30.6.2025
+ */
+
+use core::fmt::Write;
 use spin::Mutex;
 use crate::kernel::cpu as cpu;
 
@@ -53,6 +54,22 @@ pub struct CGA {
     data_port: cpu::IoPort
 }
 
+impl Write for CGA {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        for byte in s.bytes() {
+            match byte {
+                // Printable ASCII byte or newline
+                0x20..=0x7e | b'\n' => self.print_byte(byte),
+
+                // Not part of printable ASCII range
+                _ => self.print_byte(0xfe),
+            }
+        }
+
+        Ok(())
+    }
+}
+
 impl CGA {
     /// Create a new CGA instance.
     const fn new() -> CGA {
@@ -64,7 +81,9 @@ impl CGA {
 
     /// Clear CGA screen and set cursor position to (0, 0).
     pub fn clear(&mut self) {
-        /* Hier muss Code eingefuegt werden */
+
+        /* Hier muss Code eingefügt werden */
+
     }
 
     /// Display the `character` at the given position `x`,`y` with attribute `attrib`.
@@ -88,32 +107,40 @@ impl CGA {
 
     /// Return cursor position `x`,`y`
     pub fn getpos(&mut self) -> (usize, usize) {
-        /* Hier muss Code eingefuegt werden */
 
-        (0, 0) // Platzhalter, entfernen und durch sinnvollen Rueckgabewert ersetzen 
+        /* Hier muss Code eingefügt werden */
+
+        (0, 0)
     }
 
     /// Set cursor position `x`,`y` 
     pub fn setpos(&mut self, x: usize, y: usize) {
-        /* Hier muss Code eingefuegt werden */
+
+        /* Hier muss Code eingefügt werden */
+
     }
 
     /// Print byte `b` at actual position cursor position `x`,`y`
     pub fn print_byte(&mut self, b: u8) {
-        /* Hier muss Code eingefuegt werden */
+
+        /* Hier muss Code eingefügt werden */
+
     }
 
     /// Scroll text lines by one to the top.
     pub fn scrollup(&mut self) {
-        /* Hier muss Code eingefuegt werden */
+
+        /* Hier muss Code eingefügt werden */
+
     }
 
     /// Helper function returning an attribute byte for the given parameters `bg`, `fg`, and `blink`
     /// Note: Blinking characters do not work in QEMU, but work on real hardware.
     ///       Support for blinking characters is optional and can be removed, if you want.
     pub fn attribute(&mut self, bg: Color, fg: Color, blink: bool) -> u8 {
-        /* Hier muss Code eingefuegt werden */
 
-        0 // Platzhalter, entfernen und durch sinnvollen Rueckgabewert ersetzen 
+        /* Hier muss Code eingefügt werden */
+
+        0
     }
 }

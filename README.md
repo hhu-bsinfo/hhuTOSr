@@ -1,87 +1,70 @@
-# hhuTOS
+# Aufgabe 8: User Mode Threads (Isolation und Schutz - Aufgabe 1)
 
-hhuTOS = hhu Teaching Operating System.
+Dies ist die erste Aufgabe des zweiten Masterkurses zum Thema "Betriebssystementwicklung". Falls Sie den ersten Kurs bereits gehört haben, können Sie Ihr vorhandenes Betriebssystem weiter entwickeln. Sollten Sie in diesem Kurs neu dazu gekommen sein, oder generell lieber mit einem "frischen" OS starten, finden Sie im Branch [vorgabe-8](https://github.com/hhu-bsinfo/hhuTOSr/tree/vorgabe-8) eine etwas abgespeckte Version (ohne PC Speaker, Mutex und Demos) unserer Lösung für den ersten Kurs. Diese können Sie als Basis für den Kurs "Isolation und Schutz in Betriebssystemen" verwenden.
 
-This file describes all commands needed for building, running, and debugging hhuTOS. 
+*Achtung: Der Branch wird 14 Tage nach Beginn der Vorlesungszeit offline genommen.*
 
-Last update: 07.04.2025.
+## Lernziele
+1. Verstehen wie bei der x86-Architektur Anwendungscode im User Mode (Ring 3) ausgeführt wird und wie man damit verhindert, dass ein User-Thread privilegierte Instruktionen ausführt oder auf Ports zugreift.
 
-## Preparation
+## A8.1: Global Descriptor Table (GDT)
+Zunächst benötigen wir in der vorhandenen GDT (liegt bei der Marke `_gdt`) zwei weitere Einträge: Einen für Ring 3 Code und einen für Ring 3 Daten. Das Limit der GDT muss ebenfalls angepasst werden, da wir die Anzahl der Einträge verändern. Das Limit liegt bei der Marke `_gdt_descriptor`.
 
-### Rust Compiler
+Alle Arbeiten in dieser Aufgabe sind in Assembler in der Datei `boot.asm` durchzuführen.
 
-For building hhuTOS, a _rust nightly_ toolchain is needed. To install _rust_ use [rustup](https://rustup.rs/). The toolchain `nightly-2025-03-10` is confirmed to work with hhuTOS.
-We also need `cargo-make`.
+Die Änderungen lassen sich zunächst nicht wirklich testen. Jedoch sollte das OS weiterhin ordungsgemäß booten, nachdem Sie die GDT angepasst.
 
-```bash
-rustup toolchain install nightly-2025-03-10
-rustup override set nightly-2025-03-10
-cargo install --no-default-features cargo-make
-```
+*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 3.4.5 Segment Descriptors.*
 
-Furthermore, we need to install the _build-essential_ tools, as well as the _Netwide Assembler_ (nasm) for building hhuTOS.
-We use _GRUB_ as a bootloader and need _xorriso_ for building a bootable ISO image.
-Last but not least, QEMU is recommended to run hhuTOS in a virtual machine and _GDB_ for debugging.
+## A8.2: Task State Segment (TSS)
+Als nächstes benötigen wir ein TSS, damit der Prozessor den Kernel-Stack findet, wenn beispielweise ein Thread im Ring 3 durch einen Interrupt unterbrochen wird. Hierfür nutz der Prozessor im TSS den Eintrag `rsp0` (Stack-Zeiger für den Ring 0). In der Vorgabe befindet sich bereits ein TSS (ohne IO-Bitmap; lassen wir absichtlich weg, dadurch sind jegliche Portzugriffe im User-Mode unterbunden) an der Marke `_tss`. Da wir nur einen CPU-Kern nutzen, reicht ein einziges TSS für unser Betriebssystem. 
 
-On Ubuntu 24.04 you can install all the above with a single apt command:
+Damit das TSS genutzt werden kann muss ein TSS-Deskriptor (TSSD) in der GDT hinzugefügt werden. Bis auf die Basis-Adresse können alle Informationen im TSSD direkt statisch eingetragen werden. Zusätzlich muss nochmals das Limit in `_gdt_descriptor` angepasst werden (wie bei Aufgabe 1).
 
-```bash
-sudo apt install build-essential nasm grub-pc xorriso qemu-system-x86 gdb
-```
+*Achtung: Der TSSD-Eintrag hat die doppelte Größe!*
 
-On macOS, we can install most of the tools via [brew](https://brew.sh/):
+Die Basisadresse des TSS muss zur Laufzeit mithilfe der Funktion `_tss_set_base_address()` in den TSSD eingetragen werden. Diese Funktion wird in der Vorgabe bereits an der richtigen Stelle aufgerufen (nur einmal beim Bootvorgang). Um einfach an die Basisadresse des TSSD-Eintrags zu gelangen, definieren Sie sich in der GDT vor dem TSSD-Eintrag in Assembler eine Marke (engl. Label).
 
-```bash
-brew install x86_64-elf-binutils nasm xorriso qemu x86_64-elf-gdb
-```
+Nun benötigen wir noch eine Funktion zum Setzen des Kernel-Stack-Zeigers (`rsp0`) in unserem TSS. Hierfür gibt es in der Vorgabe die Marke `_tss_set_rsp0()`. Diese Funktion wird bereits an der richtigen Stelle in der Vorgabe aufgerufen und hierbei wird als Parameter der Zeiger auf den Stack übergeben, welcher aktuell verwendet wird. Später nutzen wir diese Funktion in Rust, um bei jedem Thread-Wechsel den rsp0 (Kernel-Stack-Pointer) im TSS zu sichern.
 
-Unfortunately the correct GRUB version cannot be installed via brew and needs to be compiled manually:
+Zuletzt muss noch das TSS-Register (TSSR) mit dem Befehl `ltr` geladen werden. Die richtige Stelle ist in `boot.asm` durch einen Kommentar markiert.
 
-```bash
-brew install x86_64-elf-gcc
-git clone git://git.savannah.gnu.org/grub.git && cd grub
-./bootstrap
-./autogen.sh
-./configure --disable-werror TARGET_CC=x86_64-elf-gcc TARGET_OBJCOPY=x86_64-elf-objcopy TARGET_STRIP=x86_64-elf-strip TARGET_NM=x86_64-elf-nm TARGET_RANLIB=x86_64-elf-ranlib --target=x86_64-elf --prefix=$HOME/opt/grub
-make -j8
-make install
-```
+Der Speicherplatz des initialen Stacks ist an der Marke `_init_stack` definiert. Er wird aber, sobald der Scheduler läuft, nicht mehr verwendet. Alle Stacks (User- und Kernel-Mode) aller Threads liegen dann im Heap und werden mit unserem Allokator alloziert.
 
-As a last step, we need to add GRUB to our `PATH` variable:
+Alle Arbeiten in dieser Aufgabe sind in Assembler in der Datei `boot.asm` durchzuführen.
 
-```bash
-export PATH=$PATH:~/opt/grub/bin
-```
+*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 7.2 Task Management Data Structures*
 
-## Compiling
-For a full build run: 
+## A8.3: Threads in Ring 3 starten
+User-Level-Threads (laufen im Ring 3) benötigen immer zwei Stacks, einen für den User- und einen für den Kernel-Mode. Der Einfachheit halber allozieren wir immer zwei Stacks, auch für reine Kernel-Threads. Hierfür muss die `struct Thread` in `thread.rs` angepasst werden. Außerdem soll die Funktion `new_user_thread()` einen Thread zurückgeben, bei dem die Boolean-Flag `is_kernel_thread` auf `false` gesetzt ist. Die Funktion `new()` wird in `new_kernel_thread()` umbenannt, die Funktion `kickoff()` in `kickoff_kernel_thread()`  und `prepare_stack()` in `prepare_kernel_stack()`.
 
-`cargo make`
+Die Thread-Umschaltung ist in `thread_switch()` fertig vorgegeben. Neben dem Sichern und Wieder­her­stellen der Register muss auch der Kernel-Stack im TSS umgeschaltet werden. Dafür wird der Parameter `next_stack_end` verwendet.  Der User-Level-Stack-Zeiger muss nicht extra verwaltet werden, da er automatisch durch die Hardware bei einem Thread-Wechsel gesichert wird. Der Thread-Wechsel aus einem User-Thread erfolgt nur aus dem Timer-Interrupt heraus und dafür wechselt der Prozessor automatisch von Ring 3 nach Ring 0 und sichert den Stack-Zeiger des unterbrochenen User-Level Threads auf dem Kernel-Stack.
 
-## Running
+*Achtung: Das heißt, User-Threads dürfen aktuell nicht `Scheduler::yield_cpu()` und `Scheduler::exit()` aufrufen. Daher kann auch `pit::wait()` noch nicht im User Mode verwendet werden. Außerdem klappt auch unser Mutex aus Aufgabe 6 nicht im User Mode. Sollten Sie mit Ihrem Betriebssystem aus dem ersten Kurs weiterarbeiten, müssen Sie für die CGA-Instanz wieder ein klassisches Spinlock verwenden, statt unseres Mutex mit Warteschlange.*
 
-To run the image, use the following command, which will automatically build hhuTOS and run it in QEMU:
+Der vorhandene Thread-Start mithilfe von `prepare_kernel_stack()` und `start()` bleibt un­ver­ändert. Damit startet jeder Thread zunächst immer im Ring 0. In `kickoff_kernel_thread()` muss der Kernel-Stack im TSS gesetzt werden, mithilfe der Funktion _tss_set_rsp0.
 
-`cargo make qemu`
+Als nächstes muss die Funktion `switch_to_usermode()` in thread.rs implementiert werden. Sie soll die Assembler-Funktion `thread_user_start()` verwenden, um mit `iretq` einen Ring-Wechsel durchzuführen (anders geht das nicht). In `switch_to_usermode()` muss ein Stackframe gebaut werden, wie er bei einem Interrupt mit Privilegienwechsel vorliegt. Für SS und CS sind die ent­sprechenden User-Mode-Einträge in der GDT zu verwenden (siehe Aufgabe 1).
 
-## Debugging 
+*Achtung: für die Stack­einträge CS und SS muss RPL = 3 gesetzt werden! Und der Stackframe darf keinen Error-Code beinhalten.*
 
-hhuTOS contains configuration files for VSCode. To use VSCode for Debugging, just install the _Rust_ and _C++_ extensions (_Memory Viewer_ is also recommended) and the debug target `qemu-gdb` should appear in the `Run and Debug` tab in VSCode. Just click the play button to start a debugging session. 
+Hierdurch sollten wir dann in `kickoff_user_thread()` „landen“ und der Prozessor sollte dann in Ring 3 sein.
 
-It is also possible to debug hhuTOS via GDB in a terminal. To start QEMU with GDB-server run the following command in a terminal (this should open `qemu` but not boot hhuTOS yet):
+Am besten sollte das Umschalten in den Ring 3 vorerst nur mit einem Thread getestet werden, beispielsweise dem Idle-Thread, also versuchen den Idle-Thread im Ring 3 laufen zu lassen. Später soll der Idle-Thread natürlich im Ring 0 ausgeführt werden.
 
-```bash
-cargo make qemu-gdb
-```
+Hinweis: wie kann man erkennen, ob man im User-Mode ist?
+ - Einen Port-Befehl ausführen, dieser sollte eine General Protection Fault (GPF) auslösen.
+ - Oder mit dem Debugger einen Breakpoint auf `kickoff_user_thread()` setzen und prüfen, ob RPL = 3 im CS-Register steht.
 
-Open another terminal and start a GDB debugging session:
+Alle Arbeiten in dieser Aufgabe sind in Rust in der Datei `thread.rs` durchzuführen.
 
-```bash
-cargo make gdb
-```
+### Testszenario
+In der Datei `user/aufgabe8/user_threads.rs` finden Sie bereits ein fertiges Testprogramm, welches einen Kernel- und einen User-Thread startet. Jeder Thread füllt eine eigene Zeile auf dem Bildschirm nach und nach mit dem Buchstaben `K` oder `U`. Für ein erweitertes Testszenario können Sie mehrer User-Threads starten. Prüfen Sie außerdem mit dem Debugger ob der Kernel-Thread auch nach mehreren Schleifendurchläufen noch in Ring 0 und der User-Thread in Ring 3 läuft (ablesbar am CS-Register).
 
-For more convenient debugging, we recommend starting GDB with the integrated _Terminal UI_ (TUI):
+| ![User-Thread Test 1](img/user-threads1.png) |
+|:--:|
+| *Ein Kernel- und ein User-Thread* |
 
-```bash
-cargo make gdbt
-```
+| ![User-Thread Test 2](img/user-threads2.png) |
+|:--:|
+| *Zwei Kernel- und drei User-Threads* |

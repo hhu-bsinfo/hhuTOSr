@@ -1,3 +1,7 @@
+# Isolation und Schutz in Betriebssystemen
+
+Der Kurs "Isolation und Schutz in Betriebssystemen" startet mit [Aufgabe 8](https://github.com/hhu-bsinfo/hhuTOSr/tree/aufgabe-8). Falls Sie am Kurs "Betriebssystementwicklung" teilgenommen haben, können Sie ihr bestehendes System weiter entwickeln. Ansonsten findet sich im Branch [vorgabe-8](https://github.com/hhu-bsinfo/hhuTOSr/tree/vorgabe-8) ein fertiges Basis-System, dass als Grundlage für den Kurs verwendet werden kann.
+
 # hhuTOS
 
 hhuTOS = hhu Teaching Operating System.

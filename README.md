@@ -14,12 +14,12 @@ Last update: 07.04.2025.
 
 ### Rust Compiler
 
-For building hhuTOS, a _rust nightly_ toolchain is needed. To install _rust_ use [rustup](https://rustup.rs/). The toolchain `nightly-2025-03-10` is confirmed to work with hhuTOS.
+For building hhuTOS, a _rust nightly_ toolchain is needed. To install _rust_ use [rustup](https://rustup.rs/). The toolchain `nightly-2025-10-01` is confirmed to work with hhuTOS.
 We also need `cargo-make`.
 
 ```bash
-rustup toolchain install nightly-2025-03-10
-rustup override set nightly-2025-03-10
+rustup toolchain install nightly-2025-10-01
+rustup override set nightly-2025-10-01
 cargo install --no-default-features cargo-make
 ```
 

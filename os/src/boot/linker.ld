@@ -6,7 +6,6 @@ PHDRS
     rodata PT_LOAD;
     data PT_LOAD;
     bss PT_LOAD;
-    init PT_LOAD;
 }
 
 SECTIONS {
@@ -20,13 +19,6 @@ SECTIONS {
         *(.multiboot_header)
     } :text
 
-    /* Startcode fuer die APs, wird von System::init() reloziert */
-	.boot_seg_ap ALIGN(0x10) :
-	{
-		*(".boot_seg_ap")
-		*(".boot_seg_ap$")
-	} :init
-
     .text :
     {
         *(.text*)
@@ -34,18 +26,17 @@ SECTIONS {
 
     .rodata :
     {
-        *(.rodata)
+        *(.rodata*)
     } :rodata
 
     .data :
     {
-        *(.data)
+        *(.data*)
     } :data
 
    .bss : 
     {
       ___BSS_START__ = .;
-      *(".bss")
       *(".bss.*")
       ___BSS_END__ = .;
     } :bss

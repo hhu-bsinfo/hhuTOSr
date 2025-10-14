@@ -93,7 +93,7 @@ _multiboot_header:
     dd MULTIBOOT_GRAPHICS_BPP
 
 ; Entry point called by the bootloader
-_start:
+start:
     cli ; Disable interrupts
     lgdt [_gdt_descriptor] ; Load the GDT
 

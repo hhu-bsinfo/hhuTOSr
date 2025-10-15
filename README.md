@@ -1,70 +1,54 @@
-# Aufgabe 8: User Mode Threads (Isolation und Schutz - Aufgabe 1)
-
-Dies ist die erste Aufgabe des zweiten Masterkurses zum Thema "Betriebssystementwicklung". Falls Sie den ersten Kurs bereits gehört haben, können Sie Ihr vorhandenes Betriebssystem weiter entwickeln. Sollten Sie in diesem Kurs neu dazu gekommen sein, oder generell lieber mit einem "frischen" OS starten, finden Sie im Branch [vorgabe-8](https://github.com/hhu-bsinfo/hhuTOSr/tree/vorgabe-8) eine etwas abgespeckte Version (ohne PC Speaker, Mutex und Demos) unserer Lösung für den ersten Kurs. Diese können Sie als Basis für den Kurs "Isolation und Schutz in Betriebssystemen" verwenden.
-
-*Achtung: Der Branch wird 14 Tage nach Beginn der Vorlesungszeit offline genommen.*
+# Aufgabe 9: Systemaufrufe (Isolation und Schutz - Aufgabe 2)
 
 ## Lernziele
-1. Verstehen wie bei der x86-Architektur Anwendungscode im User Mode (Ring 3) ausgeführt wird und wie man damit verhindert, dass ein User-Thread privilegierte Instruktionen ausführt oder auf Ports zugreift.
+1. Verstehen wie Systemaufrufe funktionieren, um kontrolliert von Ring 3 in Ring 0 zu schalten und somit in kontrollierter Weise Funktionen des Kerns aufzurufen, welche wiederum privilegierte Instruktionen verwenden dürfen.
 
-## A8.1: Global Descriptor Table (GDT)
-Zunächst benötigen wir in der vorhandenen GDT (liegt bei der Marke `_gdt`) zwei weitere Einträge: Einen für Ring 3 Code und einen für Ring 3 Daten. Das Limit der GDT muss ebenfalls angepasst werden, da wir die Anzahl der Einträge verändern. Das Limit liegt bei der Marke `_gdt_descriptor`.
+## A9.1: Interrupt Descriptor Table (IDT)
+Ein sehr grundlegender Ansatz Systemaufrufe durchzuführen besteht darin, einen Software-Interrupt auszulösen (wie beispielsweise der Vektor 0x80 in Linux), um in den Ring 0 zu wechseln. Hierzu müssen wir einen Eintrag in der IDT verändern.
 
-Alle Arbeiten in dieser Aufgabe sind in Assembler in der Datei `boot.asm` durchzuführen.
+Aktuell ist unsere IDT komplett (256 Einträge) mit Interrupt Gates befüllt, die alle DPL=0 gesetzt haben und auf die Funktion `int_disp()` verweisen. Damit wir einen Systemaufruf mithilfe eines Software-Interrupts realisieren können benötigen wir in der IDT ein Trap-Gate mit DPL=3 (damit dieses aus dem User-Mode heraus zugegriffen werden darf). Wir überschreiben hierzu einfach den existierenden Eintrag an der Index-Position 0x80 (=Vektornummer)
 
-Die Änderungen lassen sich zunächst nicht wirklich testen. Jedoch sollte das OS weiterhin ordungsgemäß booten, nachdem Sie die GDT angepasst.
+Zum Erzeugen eines Trap-Gate Eintrags soll in `idt.rs` ein neue Funktion `new_trap_gate()` für das Struct `IdtEntry` implementiert werden.
 
-*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 3.4.5 Segment Descriptors.*
+*Achtung: Die bereits existierende Funktion `IdtEntry::new()` wurde in der Vorgabe zu `new_interrupt_gate()` umbenannt.*
 
-## A8.2: Task State Segment (TSS)
-Als nächstes benötigen wir ein TSS, damit der Prozessor den Kernel-Stack findet, wenn beispielweise ein Thread im Ring 3 durch einen Interrupt unterbrochen wird. Hierfür nutz der Prozessor im TSS den Eintrag `rsp0` (Stack-Zeiger für den Ring 0). In der Vorgabe befindet sich bereits ein TSS (ohne IO-Bitmap; lassen wir absichtlich weg, dadurch sind jegliche Portzugriffe im User-Mode unterbunden) an der Marke `_tss`. Da wir nur einen CPU-Kern nutzen, reicht ein einziges TSS für unser Betriebssystem. 
+Anschließend muss noch ein Trap Gate in der IDT installiert werden. Setzen Sie hierfür mit Hilfe der Funktion `IdtEntry::syscall_gate()` den Vektor 0x80 der IDT so, dass er auf die Funktion `syscall_dispatcher::syscall_disp()` verweist.
 
-Damit das TSS genutzt werden kann muss ein TSS-Deskriptor (TSSD) in der GDT hinzugefügt werden. Bis auf die Basis-Adresse können alle Informationen im TSSD direkt statisch eingetragen werden. Zusätzlich muss nochmals das Limit in `_gdt_descriptor` angepasst werden (wie bei Aufgabe 1).
+*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 6.11 IDT Descriptors.*
 
-*Achtung: Der TSSD-Eintrag hat die doppelte Größe!*
+## A9.2: Syscall-Handler
+Als nächstes muss der Syscall-Handler `syscall_disp()` in `syscall_dispatcher.rs` programmiert werden. Ergänzen Sie hierzu den fehlenden Code in `syscall_disp()`. Ein Systemaufruf soll folgendermaßen ablaufen:
+1. Eine Anwendung schreibt die Nummer des gewünschten Systemaufrufs in das Register `rax` und löst dann mit `int 0x80` einen Software-Interrupt aus.
+2. Durch unseren neuen IDT-Eintrag wird direkt die Funktion `syscall_disp()` angesprungen (dabei wurde von Ring 3 in Ring 0 gewechselt). Diese muss nun alle Register (außer `rax`) sichern, anschließend den Wert in `rax` nutzen um den richtigen Eintrag der Tabelle der Systemaufrufe zu finden und schließlich die entsprechende Funktion aus der Tabelle aufrufen.
+3. Nun müssen alle Register (außer `rax`) wiederhergestellt werden und anschließend wird mit `iretq` in Ring 3 zur Anwendung zurückgekehrt. Der Rückgabewert des Systemaufrufs bleibt dabei in `rax` liegen und kann von der Anwendung verarbeitet werden.
 
-Die Basisadresse des TSS muss zur Laufzeit mithilfe der Funktion `_tss_set_base_address()` in den TSSD eingetragen werden. Diese Funktion wird in der Vorgabe bereits an der richtigen Stelle aufgerufen (nur einmal beim Bootvorgang). Um einfach an die Basisadresse des TSSD-Eintrags zu gelangen, definieren Sie sich in der GDT vor dem TSSD-Eintrag in Assembler eine Marke (engl. Label).
+Die User Mode API für **alle** Systemaufrufe befindet sich in der Datei `user_api.rs`. Hier ist bereits der Systemaufruf `usr_hello_world()` vorgegeben, welcher "Hello, world!" auf der seriellen Schnittstelle ausgibt.
 
-Nun benötigen wir noch eine Funktion zum Setzen des Kernel-Stack-Zeigers (`rsp0`) in unserem TSS. Hierfür gibt es in der Vorgabe die Marke `_tss_set_rsp0()`. Diese Funktion wird bereits an der richtigen Stelle in der Vorgabe aufgerufen und hierbei wird als Parameter der Zeiger auf den Stack übergeben, welcher aktuell verwendet wird. Später nutzen wir diese Funktion in Rust, um bei jedem Thread-Wechsel den rsp0 (Kernel-Stack-Pointer) im TSS zu sichern.
+Das kernelseitige Gegenstück zu `usr_hello_world()` heißt `sys_hello_world()` und befindet sich im Ordner `syscalls/functions/`. Hier sollen auch alle anderen Systemaufrufe implemnetiert werden Es bietet sich an, thematisch zusammenpassende Funktionen in Dateien zu gruppieren. Das bleibt jedoch Ihnen überlassen.
 
-Zuletzt muss noch das TSS-Register (TSSR) mit dem Befehl `ltr` geladen werden. Die richtige Stelle ist in `boot.asm` durch einen Kommentar markiert.
+Zum Testen der Systemaufrufe finden Sie in der Vorgabe die Datei `user/aufgabe-9/syscall_demo.rs`, welche einen neuen User-Thread erzeugt, der die Funktion `syscall_test_thread()` ausführt. Rufen Sie hier `usr_hello_world()` auf um Ihre Implementierung zu testen. Wenn alles funktioniert sollte die Textausgabe der Funktion `sys_hello_world()`  auf der seriellen Schnittstelle zu sehen sein. *Wichtig: Hierfür werden Portbefehle verwendet, die im User-Mode nicht erlaubt sind. Durch den Systemaufruf wechseln wir jedoch in den Ring 0 können dann den Code ausführen.*
 
-Der Speicherplatz des initialen Stacks ist an der Marke `_init_stack` definiert. Er wird aber, sobald der Scheduler läuft, nicht mehr verwendet. Alle Stacks (User- und Kernel-Mode) aller Threads liegen dann im Heap und werden mit unserem Allokator alloziert.
+## A9.3: Weitere Systemaufrufe (mit Parametern)
+Nachdem der erste Systemaufruf erfolgreich getestet wurde, sollen nun die nachfolgenden implementiert werden:
+ - `usr_thread_yield()` -> `sys_thread_yield()`: Gibt freiwillig die CPU ab und wechselt zum nächsten Thread.
+ - `usr_thread_exit()` -> `sys_thread_exit()`: Beendet den aktuell laufenden Thread -> In `threads.rs` kann anschließend die Funktion `kickoff_user_thread()` so geändert werden, dass sie `usr_thread_exit()` aufruft, statt am Ende eines User Threads in einer Dauerschleife hängen zu bleiben.
+ - `usr_thread_get_id() -> usize` -> `sys_thread_get_id() -> u64`: Gibt die ID des aktuell laufenden Threads zurück.
+ - `usr_get_system_time() -> usize` -> `sys_get_system_time() -> u64`: Gibt die Systemzeit in Millisekunden zurück.
+ - `usr_print(msg: &str)` -> `sys_print(buffer: *const u8, len: usize)`: Gibt eine Nachricht an der aktuellen Position auf dem CGA-Bildschirm aus.
+ - `usr_get_char() -> char` -> `sys_get_char() -> u64`: Gibt den nächsten Buchstaben aus dem Buffer des Tastatur zurück.
+Für jede Funktion muss außerdem ein Eintrag in `user_api::SyscallFunction` angelegt werden.
 
-Alle Arbeiten in dieser Aufgabe sind in Assembler in der Datei `boot.asm` durchzuführen.
+Um Systemaufrufe mit Parametern zu unterstützen, müssen zusätzlich zu `syscall0(syscall: SyscallFunction)` auch noch Funktionen wie `syscall1(syscall: SyscallFunction, arg1: u64)`, `syscall2(syscall: SyscallFunction, arg1: u64, arg2: u64)`, etc. angelegt werden um bis zu fünf Parameter zu unterstützen. Die Parameter sollen für die Systemaufrufe in den Registern entsprechend der `System V AMD64 ABI` übergeben werden.
 
-*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 7.2 Task Management Data Structures*
+*Wichtige Information für die Parameterübergabe in Registern finden Sie in System V Application Binary Interface AMD64 Architecture Processor Supplement in Kapitel 3.2.3 Parameter Passing.*
 
-## A8.3: Threads in Ring 3 starten
-User-Level-Threads (laufen im Ring 3) benötigen immer zwei Stacks, einen für den User- und einen für den Kernel-Mode. Der Einfachheit halber allozieren wir immer zwei Stacks, auch für reine Kernel-Threads. Hierfür muss die `struct Thread` in `thread.rs` angepasst werden. Außerdem soll die Funktion `new_user_thread()` einen Thread zurückgeben, bei dem die Boolean-Flag `is_kernel_thread` auf `false` gesetzt ist. Die Funktion `new()` wird in `new_kernel_thread()` umbenannt, die Funktion `kickoff()` in `kickoff_kernel_thread()`  und `prepare_stack()` in `prepare_kernel_stack()`.
+Testen Sie Ihre Systemaufrufe in `syscall_demo::syscall_test_thread()` folgendermaßen: Zu Beginn soll der aktuelle Thread-ID auf dem CGA-Bildschirm ausgegeben werden. Anschließend sollen in einer Schleife Zeichen von der Tastatur eingelesen werden. Immer wenn Enter gedrückt wird, soll die eingegebene Zeile, sowie die aktuelle Systemzeit auf dem CGA-Bildschirm ausgegeben werden.
 
-Die Thread-Umschaltung ist in `thread_switch()` fertig vorgegeben. Neben dem Sichern und Wieder­her­stellen der Register muss auch der Kernel-Stack im TSS umgeschaltet werden. Dafür wird der Parameter `next_stack_end` verwendet.  Der User-Level-Stack-Zeiger muss nicht extra verwaltet werden, da er automatisch durch die Hardware bei einem Thread-Wechsel gesichert wird. Der Thread-Wechsel aus einem User-Thread erfolgt nur aus dem Timer-Interrupt heraus und dafür wechselt der Prozessor automatisch von Ring 3 nach Ring 0 und sichert den Stack-Zeiger des unterbrochenen User-Level Threads auf dem Kernel-Stack.
+![System Call Test](img/syscalls.png)
 
-*Achtung: Das heißt, User-Threads dürfen aktuell nicht `Scheduler::yield_cpu()` und `Scheduler::exit()` aufrufen. Daher kann auch `pit::wait()` noch nicht im User Mode verwendet werden. Außerdem klappt auch unser Mutex aus Aufgabe 6 nicht im User Mode. Sollten Sie mit Ihrem Betriebssystem aus dem ersten Kurs weiterarbeiten, müssen Sie für die CGA-Instanz wieder ein klassisches Spinlock verwenden, statt unseres Mutex mit Warteschlange.*
+## A9.4: Schnelle Systemaufrufe (optional)
+Systemaufrufe über ein Trap-Gate sind nicht sehr schnell. Daher wurden schnellere Varianten eingeführt: `sysenter`/`sysexit` (Intel) und `syscall`/`sysret` (AMD). Aus Gründen der Kompatibilität verwenden x86_64-Systeme letztere Variante. Um diese schnellere Variante zu nutzen muss die GDT dem geforderten Aufbau entsprechen.
 
-Der vorhandene Thread-Start mithilfe von `prepare_kernel_stack()` und `start()` bleibt un­ver­ändert. Damit startet jeder Thread zunächst immer im Ring 0. In `kickoff_kernel_thread()` muss der Kernel-Stack im TSS gesetzt werden, mithilfe der Funktion _tss_set_rsp0.
+Argumente können in den Registern übergeben werden, wie beim Interrupt-basierten Systemaufruf, aber es ist zu beachten, dass das Register RCX (4. Parameter) auch von der `syscall` Instruktion genutzt wird. Als Work-Around kann der 4. Parameter in einem anderen Register übergeben werden.
 
-Als nächstes muss die Funktion `switch_to_usermode()` in thread.rs implementiert werden. Sie soll die Assembler-Funktion `thread_user_start()` verwenden, um mit `iretq` einen Ring-Wechsel durchzuführen (anders geht das nicht). In `switch_to_usermode()` muss ein Stackframe gebaut werden, wie er bei einem Interrupt mit Privilegienwechsel vorliegt. Für SS und CS sind die ent­sprechenden User-Mode-Einträge in der GDT zu verwenden (siehe Aufgabe 1).
-
-*Achtung: für die Stack­einträge CS und SS muss RPL = 3 gesetzt werden! Und der Stackframe darf keinen Error-Code beinhalten.*
-
-Hierdurch sollten wir dann in `kickoff_user_thread()` „landen“ und der Prozessor sollte dann in Ring 3 sein.
-
-Am besten sollte das Umschalten in den Ring 3 vorerst nur mit einem Thread getestet werden, beispielsweise dem Idle-Thread, also versuchen den Idle-Thread im Ring 3 laufen zu lassen. Später soll der Idle-Thread natürlich im Ring 0 ausgeführt werden.
-
-Hinweis: wie kann man erkennen, ob man im User-Mode ist?
- - Einen Port-Befehl ausführen, dieser sollte eine General Protection Fault (GPF) auslösen.
- - Oder mit dem Debugger einen Breakpoint auf `kickoff_user_thread()` setzen und prüfen, ob RPL = 3 im CS-Register steht.
-
-Alle Arbeiten in dieser Aufgabe sind in Rust in der Datei `thread.rs` durchzuführen.
-
-### Testszenario
-In der Datei `user/aufgabe8/user_threads.rs` finden Sie bereits ein fertiges Testprogramm, welches einen Kernel- und einen User-Thread startet. Jeder Thread füllt eine eigene Zeile auf dem Bildschirm nach und nach mit dem Buchstaben `K` oder `U`. Für ein erweitertes Testszenario können Sie mehrer User-Threads starten. Prüfen Sie außerdem mit dem Debugger ob der Kernel-Thread auch nach mehreren Schleifendurchläufen noch in Ring 0 und der User-Thread in Ring 3 läuft (ablesbar am CS-Register).
-
-| ![User-Thread Test 1](img/user-threads1.png) |
-|:--:|
-| *Ein Kernel- und ein User-Thread* |
-
-| ![User-Thread Test 2](img/user-threads2.png) |
-|:--:|
-| *Zwei Kernel- und drei User-Threads* |
+Als Präfix für die schnellen Systemaufrufe bietet sich beispielsweise `fast_` an.

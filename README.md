@@ -33,7 +33,7 @@ Der Speicherplatz des initialen Stacks ist an der Marke `_init_stack` definiert.
 
 Alle Arbeiten in dieser Aufgabe sind in Assembler in der Datei `boot.asm` durchzuführen.
 
-*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 7.2 Task Management Data Structures*
+*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 9.2 Task Management Data Structures*
 
 ## A8.3: Threads in Ring 3 starten
 User-Level-Threads (laufen im Ring 3) benötigen immer zwei Stacks, einen für den User- und einen für den Kernel-Mode. Der Einfachheit halber allozieren wir immer zwei Stacks, auch für reine Kernel-Threads. Hierfür muss die `struct Thread` in `thread.rs` angepasst werden. Außerdem soll die Funktion `new_user_thread()` einen Thread zurückgeben, bei dem die Boolean-Flag `is_kernel_thread` auf `false` gesetzt ist. Die Funktion `new()` wird in `new_kernel_thread()` umbenannt, die Funktion `kickoff()` in `kickoff_kernel_thread()`  und `prepare_stack()` in `prepare_kernel_stack()`.
@@ -57,6 +57,8 @@ Hinweis: wie kann man erkennen, ob man im User-Mode ist?
  - Oder mit dem Debugger einen Breakpoint auf `kickoff_user_thread()` setzen und prüfen, ob RPL = 3 im CS-Register steht.
 
 Alle Arbeiten in dieser Aufgabe sind in Rust in der Datei `thread.rs` durchzuführen.
+
+*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 7.12 Exception and Interrupt Handling*
 
 ### Testszenario
 In der Datei `user/aufgabe8/user_threads.rs` finden Sie bereits ein fertiges Testprogramm, welches einen Kernel- und einen User-Thread startet. Jeder Thread füllt eine eigene Zeile auf dem Bildschirm nach und nach mit dem Buchstaben `K` oder `U`. Für ein erweitertes Testszenario können Sie mehrer User-Threads starten. Prüfen Sie außerdem mit dem Debugger ob der Kernel-Thread auch nach mehreren Schleifendurchläufen noch in Ring 0 und der User-Thread in Ring 3 läuft (ablesbar am CS-Register).

@@ -37,7 +37,6 @@ impl IdtEntry {
     }
 
     /// Create a new IDT entry for a syscall handler function.
-    /// The function must be marked as 'extern "x86-interrupt"'.
     /// This entry is a trap gate and has DPL=3, so it can be called from user mode.
     pub fn syscall_gate(handler: extern "C" fn()) -> IdtEntry {
         IdtEntry::new_trap_gate(handler as u64)

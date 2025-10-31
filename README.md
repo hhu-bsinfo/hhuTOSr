@@ -1,54 +1,34 @@
-# Aufgabe 9: Systemaufrufe (Isolation und Schutz - Aufgabe 2)
+# Aufgabe 10: Speicherverwaltung für physikalischen Speicher (Isolation und Schutz - Aufgabe 3)
 
 ## Lernziele
-1. Verstehen wie Systemaufrufe funktionieren, um kontrolliert von Ring 3 in Ring 0 zu schalten und somit in kontrollierter Weise Funktionen des Kerns aufzurufen, welche wiederum privilegierte Instruktionen verwenden dürfen.
+1. Eine Speicherverwaltung für physikalische Kacheln (Page Frames) implementieren.
 
-## A9.1: Interrupt Descriptor Table (IDT)
-Ein sehr grundlegender Ansatz Systemaufrufe durchzuführen besteht darin, einen Software-Interrupt auszulösen (wie beispielsweise der Vektor 0x80 in Linux), um in den Ring 0 zu wechseln. Hierzu müssen wir einen Eintrag in der IDT verändern.
+## A10.1: Verfügbaren physikalischen Speicher ermitteln
+Bevor das Paging implementiert wird, muss zunächst ermittelt werden, wie viel und wo nutzbarer physikalischer Speicher vorhanden ist. Die Lösung ist in `multiboot.rs` in der Funktion `init_phys_memory_allocator()` bereits vorhanden, soll aber gelesen und verstanden werden.
 
-Aktuell ist unsere IDT komplett (256 Einträge) mit Interrupt Gates befüllt, die alle DPL=0 gesetzt haben und auf die Funktion `int_disp()` verweisen. Damit wir einen Systemaufruf mithilfe eines Software-Interrupts realisieren können benötigen wir in der IDT ein Trap-Gate mit DPL=3 (damit dieses aus dem User-Mode heraus zugegriffen werden darf). Wir überschreiben hierzu einfach den existierenden Eintrag an der Index-Position 0x80 (=Vektornummer)
+Die notwendigen Informationen bekommen wir von Multiboot in Form von `mmap`-Einträgen. Diese Einträge beschreiben jeweils einen zusammenhängenden Block physikalischen Speichers, der entweder reserviert oder verfügbar sein kann. Die als verfügbar markierten Speicherbereiche werden in unsere Speicherverwaltung für physikalischen Speicher via `PfListAllocator::free_block()` eingefügt. Wir müssen jedoch beachten, dass der Kernel-Code vom Bootloader nicht als reserviert markiert wird. Unser Kernel-Image wird an die Adresse 1 MiB geladen. Der Linker erzeugt die Symbole `___KERNEL_DATA_START__` und `___KERNEL_DATA_END__` um diesen Speicherbereich zu markieren. Außerdem wird der Bereich von 0 bis 1 MiB teilweise vom BIOS verwendet (Der Grafikspeicher liegt auch hier), weshalb wir ihn als nicht nutzbar betrachten. Der für uns nutzbare physikalische Speicher beginnt also direkt hinter dem Kernel Image.
 
-Zum Erzeugen eines Trap-Gate Eintrags soll in `idt.rs` ein neue Funktion `new_trap_gate()` für das Struct `IdtEntry` implementiert werden.
+Fügen Sie den folgenden Code zu Beginn ihrer `startup()`-Methode in `boot.rs` ein, um die physikalische Speicherverwaltung mit den freien Speicherblöcken aus der Multiboot Memory Map zu initialisieren:
+```
+// Copy multiboot into on stack, because it lies in physical memory that might get reused after initializing the physical memory allocator
+let multiboot_info = *multiboot_info;
 
-*Achtung: Die bereits existierende Funktion `IdtEntry::new()` wurde in der Vorgabe zu `new_interrupt_gate()` umbenannt.*
+kprintln!("Initializing physical memory allocator");
+multiboot_info.init_phys_memory_allocator();
+```
 
-Anschließend muss noch ein Trap Gate in der IDT installiert werden. Setzen Sie hierfür mit Hilfe der Funktion `IdtEntry::syscall_gate()` den Vektor 0x80 der IDT so, dass er auf die Funktion `syscall_dispatcher::syscall_disp()` verweist.
+*Information zu Multiboot, insbesondere den mmap-Einträgen finden Sie hier:* https://www.gnu.org/software/grub/manual/multiboot/multiboot.html
 
-*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 7.11 IDT Descriptors.*
+## A10.2: Ein Allokator für Page Frames
+Der verfügbare physikalische Speicher muss in 4 KiB Kacheln (Page Frames) verwaltet werden. Hierfür wird nun ein Page-Frame-Allokator benötigt. Als Basis empfiehlt sich der vorhandene Heap-Allokator (in list.rs), der Code muss natürlich angepasst werden. Wir verketten also die freien Page-Frames, wobei ein Block aus mehreren aufeinanderfolgenden Page-Frames bestehen kann. Die Metadaten für freie Blöcke schreiben wir direkt in die freien Page-Frames. Für die belegten Page-Frames be­nötigen wir keine Metadaten, da es nur 4 KiB Page-Frames gibt und jeder Page-Frame von einem Seiten­tabellen-Eintrag referenziert wird, sobald wir Paging implementiert haben.
 
-## A9.2: Syscall-Handler
-Als nächstes muss der Syscall-Handler `syscall_disp()` in `syscall_dispatcher.rs` programmiert werden. Ergänzen Sie hierzu den fehlenden Code in `syscall_disp()`. Ein Systemaufruf soll folgendermaßen ablaufen:
-1. Eine Anwendung schreibt die Nummer des gewünschten Systemaufrufs in das Register `rax` und löst dann mit `int 0x80` einen Software-Interrupt aus.
-2. Durch unseren neuen IDT-Eintrag wird direkt die Funktion `syscall_disp()` angesprungen (dabei wurde von Ring 3 in Ring 0 gewechselt). Diese muss nun alle Register (außer `rax`) sichern, anschließend den Wert in `rax` nutzen um den richtigen Eintrag der Tabelle der Systemaufrufe zu finden und schließlich die entsprechende Funktion aus der Tabelle aufrufen.
-3. Nun müssen alle Register (außer `rax`) wiederhergestellt werden und anschließend wird mit `iretq` in Ring 3 zur Anwendung zurückgekehrt. Der Rückgabewert des Systemaufrufs bleibt dabei in `rax` liegen und kann von der Anwendung verarbeitet werden.
+Beim Freigeben eines Speicherblocks soll dieser **sortiert** in die Liste eingefügt werden. Falls ein freigegebener Block an seinen Vorgänger oder Nachfolger angrenzt, soll er mit diesem (oder falls möglich beiden) verschmolzen werden. So beugen wir einer Fragmentierung des Speichers in viele kleine Blöcke vor.
 
-Die User Mode API für **alle** Systemaufrufe befindet sich in der Datei `user_api.rs`. Hier ist bereits der Systemaufruf `usr_hello_world()` vorgegeben, welcher "Hello, world!" auf der seriellen Schnittstelle ausgibt.
+Schreiben sie eine Testfunktion, die die Korrektheit ihres Allokators überprüft. Hierfür ist es nützlich eine `dump()` Funktion zu implementieren, welche die gesamte Freispeicherliste auf dem Bildschirm oder seriellen Port ausgibt.
 
-Das kernelseitige Gegenstück zu `usr_hello_world()` heißt `sys_hello_world()` und befindet sich im Ordner `syscalls/functions/`. Hier sollen auch alle anderen Systemaufrufe implemnetiert werden Es bietet sich an, thematisch zusammenpassende Funktionen in Dateien zu gruppieren. Das bleibt jedoch Ihnen überlassen.
+*Wichtige Hinweise:*
+ - *Der Allokator darf keinesfalls einen reservierten Page-Frame erneut vergeben! Bevor Sie fortfahren, sollten Sie die Korrektheit Ihres Page-Frame-Allokators testen! `assert!()` ist hier sehr nützlich.*
+ - *Ferner empfiehlt es sich Page-Frames beim Allozieren mit 0 zu initialisieren. So können später Pointer-Fehler einfacher erkannt werden, da dann ein Null-Pointer-Zugriff mithilfe des Pagings erkannt werden kann.*
 
-Zum Testen der Systemaufrufe finden Sie in der Vorgabe die Datei `user/aufgabe-9/syscall_demo.rs`, welche einen neuen User-Thread erzeugt, der die Funktion `syscall_test_thread()` ausführt. Rufen Sie hier `usr_hello_world()` auf um Ihre Implementierung zu testen. Wenn alles funktioniert sollte die Textausgabe der Funktion `sys_hello_world()`  auf der seriellen Schnittstelle zu sehen sein. *Wichtig: Hierfür werden Portbefehle verwendet, die im User-Mode nicht erlaubt sind. Durch den Systemaufruf wechseln wir jedoch in den Ring 0 können dann den Code ausführen.*
-
-## A9.3: Weitere Systemaufrufe (mit Parametern)
-Nachdem der erste Systemaufruf erfolgreich getestet wurde, sollen nun die nachfolgenden implementiert werden:
- - `usr_thread_yield()` -> `sys_thread_yield()`: Gibt freiwillig die CPU ab und wechselt zum nächsten Thread.
- - `usr_thread_exit()` -> `sys_thread_exit()`: Beendet den aktuell laufenden Thread -> In `threads.rs` kann anschließend die Funktion `kickoff_user_thread()` so geändert werden, dass sie `usr_thread_exit()` aufruft, statt am Ende eines User Threads in einer Dauerschleife hängen zu bleiben.
- - `usr_thread_get_id() -> usize` -> `sys_thread_get_id() -> u64`: Gibt die ID des aktuell laufenden Threads zurück.
- - `usr_get_system_time() -> usize` -> `sys_get_system_time() -> u64`: Gibt die Systemzeit in Millisekunden zurück.
- - `usr_print(msg: &str)` -> `sys_print(buffer: *const u8, len: usize)`: Gibt eine Nachricht an der aktuellen Position auf dem CGA-Bildschirm aus.
- - `usr_get_char() -> char` -> `sys_get_char() -> u64`: Gibt den nächsten Buchstaben aus dem Buffer des Tastatur zurück.
-Für jede Funktion muss außerdem ein Eintrag in `user_api::SyscallFunction` angelegt werden.
-
-Um Systemaufrufe mit Parametern zu unterstützen, müssen zusätzlich zu `syscall0(syscall: SyscallFunction)` auch noch Funktionen wie `syscall1(syscall: SyscallFunction, arg1: u64)`, `syscall2(syscall: SyscallFunction, arg1: u64, arg2: u64)`, etc. angelegt werden um bis zu fünf Parameter zu unterstützen. Die Parameter sollen für die Systemaufrufe in den Registern entsprechend der `System V AMD64 ABI` übergeben werden.
-
-*Wichtige Information für die Parameterübergabe in Registern finden Sie in System V Application Binary Interface AMD64 Architecture Processor Supplement in Kapitel 3.2.3 Parameter Passing.*
-
-Testen Sie Ihre Systemaufrufe in `syscall_demo::syscall_test_thread()` folgendermaßen: Zu Beginn soll der aktuelle Thread-ID auf dem CGA-Bildschirm ausgegeben werden. Anschließend sollen in einer Schleife Zeichen von der Tastatur eingelesen werden. Immer wenn Enter gedrückt wird, soll die eingegebene Zeile, sowie die aktuelle Systemzeit auf dem CGA-Bildschirm ausgegeben werden.
-
-![System Call Test](img/syscalls.png)
-
-## A9.4: Schnelle Systemaufrufe (optional)
-Systemaufrufe über ein Trap-Gate sind nicht sehr schnell. Daher wurden schnellere Varianten eingeführt: `sysenter`/`sysexit` (Intel) und `syscall`/`sysret` (AMD). Aus Gründen der Kompatibilität verwenden x86_64-Systeme letztere Variante. Um diese schnellere Variante zu nutzen muss die GDT dem geforderten Aufbau entsprechen.
-
-Argumente können in den Registern übergeben werden, wie beim Interrupt-basierten Systemaufruf, aber es ist zu beachten, dass das Register RCX (4. Parameter) auch von der `syscall` Instruktion genutzt wird. Als Work-Around kann der 4. Parameter in einem anderen Register übergeben werden.
-
-Als Präfix für die schnellen Systemaufrufe bietet sich beispielsweise `fast_` an.
+## A10.3: Kernel Heap
+Nun soll noch die Initialisierung des bestehenden Allokators für den Heap in `startup.rs` angepasst werden. Statt an einer festen Adresse einfach freien Speicher zu vermuten, soll nun freier Speicher vom Page-Frame-Allokator für den Heap angefordert werden. Nun sollte alles weiterhin funktionieren. Die Stacks werden vorerst noch im Kernel-Heap alloziert. Dies ändert sich mit dem nächsten Aufgabenblatt, wenn wir Paging einführen.

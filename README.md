@@ -8,7 +8,7 @@ Bevor das Paging implementiert wird, muss zunächst ermittelt werden, wie viel u
 
 Die notwendigen Informationen bekommen wir von Multiboot in Form von `mmap`-Einträgen. Diese Einträge beschreiben jeweils einen zusammenhängenden Block physikalischen Speichers, der entweder reserviert oder verfügbar sein kann. Die als verfügbar markierten Speicherbereiche werden in unsere Speicherverwaltung für physikalischen Speicher via `PfListAllocator::free_block()` eingefügt. Wir müssen jedoch beachten, dass der Kernel-Code vom Bootloader nicht als reserviert markiert wird. Unser Kernel-Image wird an die Adresse 1 MiB geladen. Der Linker erzeugt die Symbole `___KERNEL_DATA_START__` und `___KERNEL_DATA_END__` um diesen Speicherbereich zu markieren. Außerdem wird der Bereich von 0 bis 1 MiB teilweise vom BIOS verwendet (Der Grafikspeicher liegt auch hier), weshalb wir ihn als nicht nutzbar betrachten. Der für uns nutzbare physikalische Speicher beginnt also direkt hinter dem Kernel Image.
 
-Fügen Sie den folgenden Code zu Beginn ihrer `startup()`-Methode in `boot.rs` ein, um die physikalische Speicherverwaltung mit den freien Speicherblöcken aus der Multiboot Memory Map zu initialisieren:
+Fügen Sie den folgenden Code zu Beginn ihrer `startup()`-Funktion in `startup.rs` ein, um die physikalische Speicherverwaltung mit den freien Speicherblöcken aus der Multiboot Memory Map zu initialisieren:
 ```
 // Copy multiboot into on stack, because it lies in physical memory that might get reused after initializing the physical memory allocator
 let multiboot_info = *multiboot_info;

@@ -1,34 +1,38 @@
-# Aufgabe 10: Speicherverwaltung für physikalischen Speicher (Isolation und Schutz - Aufgabe 3)
+# Aufgabe 11: Paging (Isolation und Schutz - Aufgabe 4)
 
 ## Lernziele
-1. Eine Speicherverwaltung für physikalische Kacheln (Page Frames) implementieren.
+1. Eine grundlegende Paging-Funktionalität implementieren.
+2. Threads in eigenen Adressräumen mit isolierten User Stacks starten.
 
-## A10.1: Verfügbaren physikalischen Speicher ermitteln
-Bevor das Paging implementiert wird, muss zunächst ermittelt werden, wie viel und wo nutzbarer physikalischer Speicher vorhanden ist. Die Lösung ist in `multiboot.rs` in der Funktion `init_phys_memory_allocator()` bereits vorhanden, soll aber gelesen und verstanden werden.
+## A11.1: Seitentabellen für den Kernel
+Wir verwenden ein vier-stufiges Paging mit ausschließlich 4 KiB Seiten (keine 2 MiB Seiten). Der gesamte physikalische Adressraum soll im Kernel 1:1 gemappt werden. Dadurch kann der Kernel immer alle physikalischen Adressen zugreifen. Dafür müssen wir zunächst die höchste physikalische Adresse ermitteln. In der Vorgabe wird der `PfListAllocator` in `frames.rs` um eine neue Variable `max_addr` erweitert. Passen Sie Ihre `free_block()`-Methode so an, dass sie bei jedem eingefügten Block prüft, ob seine Endaddresse größer ist als `max_addr` und `max_addr` entsprechend aktualisiert.
 
-Die notwendigen Informationen bekommen wir von Multiboot in Form von `mmap`-Einträgen. Diese Einträge beschreiben jeweils einen zusammenhängenden Block physikalischen Speichers, der entweder reserviert oder verfügbar sein kann. Die als verfügbar markierten Speicherbereiche werden in unsere Speicherverwaltung für physikalischen Speicher via `PfListAllocator::free_block()` eingefügt. Wir müssen jedoch beachten, dass der Kernel-Code vom Bootloader nicht als reserviert markiert wird. Unser Kernel-Image wird an die Adresse 1 MiB geladen. Der Linker erzeugt die Symbole `___KERNEL_DATA_START__` und `___KERNEL_DATA_END__` um diesen Speicherbereich zu markieren. Außerdem wird der Bereich von 0 bis 1 MiB teilweise vom BIOS verwendet (Der Grafikspeicher liegt auch hier), weshalb wir ihn als nicht nutzbar betrachten. Der für uns nutzbare physikalische Speicher beginnt also direkt hinter dem Kernel Image.
+Nun soll in `pages.rs` die Funktion `PageTable::map(&mut self, virt_addr: u64, num_pages: usize, kernel: bool)` implementiert werden, die physikalischen Speicher in einen Addressraum einblendet (es empfiehlt sich eine rekursive Lösung). Ist der Parameter `kernel` auf `true` gesetzt, soll ein 1:1-Mapping erstellt werden. Die gegebene Addresse `virt_addr` ist also gleich der physikalischen Adresse, die auf der untersten Ebene in die Page Tables eingetragen wird. Für die Seitentabellen müssen dabei Page Frames alloziert werden, aber auf der untersten Ebene nicht, da hier der bestehende physikalische Speicher nur „gemappt“ wird. Der Fall, dass `kernel` auf `false` gesetzt ist, wird erst in Aufgabe 11.2 relevant.
 
-Fügen Sie den folgenden Code zu Beginn ihrer `startup()`-Funktion in `startup.rs` ein, um die physikalische Speicherverwaltung mit den freien Speicherblöcken aus der Multiboot Memory Map zu initialisieren:
-```
-// Copy multiboot into on stack, because it lies in physical memory that might get reused after initializing the physical memory allocator
-let multiboot_info = *multiboot_info;
+Bezüglich der Seitentabelleneinträge lassen wir vorerst alle Einträge im Ring 3 zugreifbar, löschen also nicht das User-Bit. Das ist noch notwendig, damit wir den Code im Ring 3 ausführen können, wird aber in einem späteren Übungsblatt abgeschafft. Zudem setzen wir alle Seiten auf schreibbar und sofern mit Page-Frames unterlegt auf „Präsent“. Um andere mögliche Bits in den Seitentabellen­einträgen, wie Caching, No-Execute, Protection Keys, etc. kümmern wir uns nicht.
 
-kprintln!("Initializing physical memory allocator");
-multiboot_info.init_phys_memory_allocator();
-```
+Die erste Seite (Adresse 0) sollte auf nicht-Präsent gesetzt werden, um Nullpointer-Zugriffe abfangen und er­kennen zu können.
 
-*Information zu Multiboot, insbesondere den mmap-Einträgen finden Sie hier:* https://www.gnu.org/software/grub/manual/multiboot/multiboot.html
+Die Funktion `init_kernel_tables()` nutzt `PageTable::map()` um ein Kernel Mapping in einem Adressraum einzurichten. Testen Sie Ihre Implementierung zunächst ohne User Threads und Interrupts, indem Sie `init_kernel_tables()` in `startup.rs` aufrufen und den Rückgabewert in das CR3-Register schreiben. Dadurch wird der neu erstellte Adressraum geladen. Wenn etwas beim Anlegen der Page Tables nicht passt, wird Ihr System hier sehr wahrscheinlich abstürzen. Es empfiehlt sich dann, das System mit einem Debugger vor dem Setzen des CR3-Registers anzuhalten, und sich die Page Tables im Speicher anzuschauen.
 
-## A10.2: Ein Allokator für Page Frames
-Der verfügbare physikalische Speicher muss in 4 KiB Kacheln (Page Frames) verwaltet werden. Hierfür wird nun ein Page-Frame-Allokator benötigt. Als Basis empfiehlt sich der vorhandene Heap-Allokator (in list.rs), der Code muss natürlich angepasst werden. Wir verketten also die freien Page-Frames, wobei ein Block aus mehreren aufeinanderfolgenden Page-Frames bestehen kann. Die Metadaten für freie Blöcke schreiben wir direkt in die freien Page-Frames. Für die belegten Page-Frames be­nötigen wir keine Metadaten, da es nur 4 KiB Page-Frames gibt und jeder Page-Frame von einem Seiten­tabellen-Eintrag referenziert wird, sobald wir Paging implementiert haben.
+Wenn das funktioniert sollte der Nullpointer-Zugriff geprüft werden. Es sollte ein Page-Fault auf­treten (Interrupt 14) und die Adresse der Instruktion die den Page-Fault ausgelöst hat steht in CR2. Schreiben Sie einen Page Fault Handler, der die Adresse ausliest und sie in einer Panic ausgibt. Sie müssen Ihren Handler in `idt.rs` an der richtigen Stelle in die IDT eintragen.
 
-Beim Freigeben eines Speicherblocks soll dieser **sortiert** in die Liste eingefügt werden. Falls ein freigegebener Block an seinen Vorgänger oder Nachfolger angrenzt, soll er mit diesem (oder falls möglich beiden) verschmolzen werden. So beugen wir einer Fragmentierung des Speichers in viele kleine Blöcke vor.
+Sofern der Kernel weiterhin funktioniert, können wieder die Interrupts aktiviert werden sowie unsere bestehenden User Threads ge­testet werden.
 
-Schreiben sie eine Testfunktion, die die Korrektheit ihres Allokators überprüft. Hierfür ist es nützlich eine `dump()` Funktion zu implementieren, welche die gesamte Freispeicherliste auf dem Bildschirm oder seriellen Port ausgibt.
+*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 5.5 4-Level Paging and 5-Level Paging.*
 
-*Wichtige Hinweise:*
- - *Der Allokator darf keinesfalls einen reservierten Page-Frame erneut vergeben! Bevor Sie fortfahren, sollten Sie die Korrektheit Ihres Page-Frame-Allokators testen! `assert!()` ist hier sehr nützlich.*
- - *Ferner empfiehlt es sich Page-Frames beim Allozieren mit 0 zu initialisieren. So können später Pointer-Fehler einfacher erkannt werden, da dann ein Null-Pointer-Zugriff mithilfe des Pagings erkannt werden kann.*
+## A11.2: Seitentabellen für User Threads
+Nun soll eine erste Isolation der Threads im User-Mode erfolgen, zunächst nur für die Stacks. Der Stack jedes User-Mode Threads soll an einem gegebenen virtuellen Adressbereich liegen (ab 64 TiB) (siehe `consts.rs`). Der User-Stack soll also nicht mehr über den globalen Heap-Allokator alloziert werden. Damit dieser Adressbereich genutzt werden kann muss ein Mapping in den Seitentabellen eingerichtet werden. Hierfür muss in `pages.rs` die Funktion `map_user_stack()` implementiert werden, welche in `threads.rs` für das Allozieren des User-Stacks verwendet werden soll. Die Funktion `PageTable::map()` muss dafür auch mit dem Parameter `kernel = false` umgehen können. Dabei soll auf der untersten Ebene nicht mehr ein 1:1 Mapping wie beim Kernel eingerichtet werden, sondern jeweils ein Page Frame mit Hilfe des Frame Allokators alloziert und eingeblendet werden.
 
-## A10.3: Kernel Heap
-Nun soll noch die Initialisierung des bestehenden Allokators für den Heap in `startup.rs` angepasst werden. Statt an einer festen Adresse einfach freien Speicher zu vermuten, soll nun freier Speicher vom Page-Frame-Allokator für den Heap angefordert werden. Nun sollte alles weiterhin funktionieren. Die Stacks werden vorerst noch im Kernel-Heap alloziert. Dies ändert sich mit dem nächsten Aufgabenblatt, wenn wir Paging einführen.
+Der Kernel-Stack eines jeden Threads soll weiterhin über den Heap-Allokator angelegt werden. Jeder Thread bekommt so einen eigenen Addressraum, welchen wir bei der Erstellung eines Threads mit `pages::init_kernel_tables()` anlegen können. Der Kernel ist dadurch in jeden Addressraum eingeblendet und bleibt durch die bisher verwendeten Page Table Flags auch vom User Mode aus ausführbar. Das ändert sich in den kommenden Ausbaustufen des Systems.
+
+Die Adresse der Page Map Level 4 (PML4), welche von `pages::init_kernel_tables()` zurückgegeben wird, muss außerdem im `Thread`-Struct gespeichert werden. In `Thread::start()` und `thread_switch()` muss nun bei jedem Thread-Wechsel auch in den Adressraum des nächsten Threads gewechselt werden. Hierzu bekommt `thread_switch()` einen weiteren Parameter `next_pml4`.
+
+Testen Sie diese Aufgabe mit zwei User-Threads, beispielweise Threads die einen Zähler ausgeben. Prüfen Sie auch mit dem Debugger, dass die Stacks wirklich alle an der gleichen virtuellen Adresse beginnen und die Isolation funktioniert!
+
+![Mapping eines virtuellen Adressraums](img/address_space.png)
+
+*Abschließende Bemerkungen*
+ - *Die Isolation des Codes folgt später. Wir haben zwar bereits eine Systemaufrufsschnittstelle, können aber daran vorbei noch beliebige Funktionen des Kernels aufrufen.*
+ - *Auch die Isolation des Heaps folgt später. Wir verwenden also vorerst unseren globalen Allokator für jeden User-Level Thread, welcher noch Speicher im Kernel-Space verwendet.*
+ - *Beides funktioniert noch, da wir die die Seiten für den Kernel noch nicht geschützt haben.*

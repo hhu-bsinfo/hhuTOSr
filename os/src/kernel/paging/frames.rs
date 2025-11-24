@@ -12,7 +12,7 @@ pub static FRAME_ALLOCATOR: Mutex<PfListAllocator> = Mutex::new(PfListAllocator:
 pub struct PhysAddr(u64);
 
 impl PhysAddr {
-    pub fn new(addr: u64) -> Self {
+    pub const fn new(addr: u64) -> Self {
         PhysAddr(addr)
     }
 

@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Start Debugger" type="RsRemoteRunConfiguration" debuggerKind="GDB" remoteCommand="localhost:1234" symbolFile="$PROJECT_DIR$/target/hhu_tosr_kernel/debug/kernel.bin" sysroot="">
+    <method v="2" />
+  </configuration>
+</component>

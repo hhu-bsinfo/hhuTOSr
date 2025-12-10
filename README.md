@@ -1,40 +1,52 @@
-# Aufgabe 11: Paging (Isolation und Schutz - Aufgabe 4)
+# Aufgabe 12: Separat kompilierte Anwendungen & Prozesse
 
 ## Lernziele
-1. Eine grundlegende Paging-Funktionalität implementieren.
-2. Threads in eigenen Adressräumen mit isolierten User Stacks starten.
+1. Kernel- und User-Code separat voneinander kompilieren.
+2. Den Kernel vor Zugriff aus dem User Space schützen.
+3. Eine einfach Struktur zur Verwaltung von Prozessen einführen.
 
-## A11.1: Seitentabellen für den Kernel
-Wir verwenden ein vier-stufiges Paging mit ausschließlich 4 KiB Seiten (keine 2 MiB Seiten). Der gesamte physikalische Adressraum soll im Kernel 1:1 gemappt werden. Dadurch kann der Kernel immer alle physikalischen Adressen zugreifen. Dafür müssen wir zunächst die höchste physikalische Adresse ermitteln. In der Vorgabe wird der `PfListAllocator` in `frames.rs` um eine neue Variable `max_addr` erweitert. Passen Sie Ihre `free_block()`-Methode so an, dass sie bei jedem eingefügten Block prüft, ob seine Endaddresse größer ist als `max_addr` und `max_addr` entsprechend aktualisiert.
+## A12.1: Getrennte Übersetzung von Anwendungen
+In der Vorgabe finden Sie die neue Ordnerstruktur für Ihr Betriebssystem. Diese ist auf der obersten Ebene in drei Ordner aufgeteilt:
+ - `os`: Enthält den gesamten Kernel-Quellcode
+ - `apps`: Enthält den Quellcode für alle Anwendungen. Jede Anwendung ist dabei ein separates Rust-Projekt in einem eigenen Unterordner. Vorgegeben ist nur die Anwendung `hello`.
+ - `usrlib`: Enthält Bibliotheksfunktionen, die von den Anwendung verwendet werden können.
+ 
+ Machen Sie sich zunächst mit der Vorgabe vertraut. Unter `apps/hello` finden Sie eine Beispiel-Anwendung, die als eigenes Rust-Projekt separat vom Kernel kompiliert wird. Diese soll von unserem Betriebssystem zur Laufzeit in ihren eigenen Adressraum geladen und ausgeführt werden. Hierbei stellen sich zunächst einige Fragen:
+  1. *Wie kommt unser Betriebssystem an die Anwendung?* Der Bootloader GRUB kann zusätzlich zum Kernel auch noch sogenannte Module für uns in den Arbeitsspeicher laden. Ein Modul ist dabei einfach eine beliebige Datei, die im Boot-Image hinterlegt ist. Wir packen alle unsere Anwendung zusammen in ein (unkomprimiertes) TAR-Archiv und lassen dieses vom Bootloader in den Arbetsspeicher laden. Unser Betriebssystem kann dann jederzeit auf Anwendungen in dem Archiv zugreigen und diese ausführen. Um das TAR-Archiv zu parsen nutzen wir die Crate `tar-no-std`.
+  2. *Welches Dateiformat haben unsere Anwendungen und wie finden wir darin den Code?* Wir linken die Anwendungen zunächst im ELF-Format. Dieses ist jedoch recht komplex und unser Betriebssystem bräuchte einen eigenen Parser dafür. Wir nutzen daher das Programm `objcopy` um den Code aus der ELF-Teil zu extrahieren und in einer sogenannten *Flat Binary* zu speichern. Diese enthält dann ausschließlich den Code und erfordert kein spezielles Parsing. Wir müssen bei diesem Ansatz nur dafür sorgen, dass die `main()`-Funktion einer Anwendung immer direkt am Anfang der Datei steht. Dafür versehen wir die `main()`-Funktion mit `#[unsafe(link_section = ".main")]` und erzeugen so eine eigene Sektion für diese. Im Linker-Skript sorgen wir dann dafür, dass die `main`-Sektion immer an den Anfang des Codes gelinkt wird.
+  3. *Wie können Anwendungen auf gemeinsame Bibliotheksfunktionen zugreifen, ohne dass wir doppelten Code erzeugen?* Dazu werden alle Bibliotheksfunktionen im Ordner `usrlib` implementiert. Jede Anwendung hat in ihrer `Makefile.toml` eine Abhängigkeit zu diesem Ordner. Das sorgt dafür, dass der Code aus `usrlib` mit jeder Anwendung kompiliert und statisch gelinkt wird.
 
-Nun soll in `pages.rs` die Funktion `PageTable::map(&mut self, virt_addr: u64, num_pages: usize, kernel: bool)` implementiert werden, die physikalischen Speicher in einen Addressraum einblendet (es empfiehlt sich eine rekursive Lösung). Ist der Parameter `kernel` auf `true` gesetzt, soll ein 1:1-Mapping erstellt werden. Die gegebene Addresse `virt_addr` ist also gleich der physikalischen Adresse, die auf der untersten Ebene in die Page Tables eingetragen wird. Für die Seitentabellen müssen dabei Page Frames alloziert werden, aber auf der untersten Ebene nicht, da hier der bestehende physikalische Speicher nur „gemappt“ wird. Der Fall, dass `kernel` auf `false` gesetzt ist, wird erst in Aufgabe 11.2 relevant.
+Um mit der neuen Ordnerstruktur zu starten, müssen Sie Ihren bisherigen Quellcode nach `os/src` kopieren. Anschließen müssen die Dateien `user_api.rs` und `spinlock.rs` nach `usrlib/src` kopiert werden. Dies erfordert leiche Anpassungen an Ihrem System, überall dort wo `Spinlock` importiert wird. Die Importe müssen so angepasst werden, dass sie nun das Spinlock aus `usrlib` importieren. Das Betriebssystem hat in seiner `Makefile.toml` bereits eine Abhängigkeit zur `usrlib`, so dass es dabei keine größeren Probleme geben sollte.
 
-Bezüglich der Seitentabelleneinträge lassen wir vorerst alle Einträge im Ring 3 zugreifbar, löschen also nicht das User-Bit. Das ist noch notwendig, damit wir den Code im Ring 3 ausführen können, wird aber in einem späteren Übungsblatt abgeschafft. Zudem setzen wir alle Seiten auf schreibbar und sofern mit Page-Frames unterlegt auf „Präsent“. Um andere mögliche Bits in den Seitentabellen­einträgen, wie Caching, No-Execute, Protection Keys, etc. kümmern wir uns nicht.
+In `usrlib/print.rs` sind bereits die Makros `pint!()` und `println!()` für den User-Space implementiert. Diese erwarten, dass der System Call `usr_print(msg: &str)` in `user_api.rs` implementiert ist. Dieser soll einen String an der aktuellen Cursor-Position ausgeben. Sie können die Vorgabe natürlich auch anpassen, falls Ihr System Call zur Textausgabe anders aussieht.
 
-Die erste Seite (Adresse 0) sollte auf nicht-Präsent gesetzt werden, um Nullpointer-Zugriffe abfangen und er­kennen zu können.
+Beim Kompielieren ist nun der zusätzliche Parameter `--no-workspace` notwendig. Dieser sorgt dafür, dass das Build-System nicht die `Makefile.toml` jedes Unterprojekts einzeln ausführt, sondern nur die `Makefile.toml` im Wurzelverzeichnis unserer Projektstruktur beachtet. Diese wiederum hat Abhängigkeiten zu den `link`-Tasks der einzelnen Anwendungen und stellt so sicher, dass das Boot-Image erst gebaut wird, wenn alle Anwendungen kompiliert und gelinkt wurden. Der vollständige Befehl zum Starten des Systems lauten nun:
 
-Die Funktion `init_kernel_tables()` nutzt `PageTable::map()` um ein Kernel Mapping in einem Adressraum einzurichten. Testen Sie Ihre Implementierung zunächst ohne User Threads und Interrupts, indem Sie `init_kernel_tables()` in `startup.rs` aufrufen und den Rückgabewert in das CR3-Register schreiben. Dadurch wird der neu erstellte Adressraum geladen. Wenn etwas beim Anlegen der Page Tables nicht passt, wird Ihr System hier sehr wahrscheinlich abstürzen. Es empfiehlt sich dann, das System mit einem Debugger vor dem Setzen des CR3-Registers anzuhalten, und sich die Page Tables im Speicher anzuschauen.
+```
+cargo make --no-workspace qemu
+```
 
-Wenn das funktioniert sollte der Nullpointer-Zugriff geprüft werden. Es sollte ein Page-Fault auf­treten (Interrupt 14) und die Adresse der Instruktion die den Page-Fault ausgelöst hat steht in CR2. Schreiben Sie einen Page Fault Handler, der die Adresse ausliest und sie in einer Panic ausgibt. Sie müssen Ihren Handler in `idt.rs` an der richtigen Stelle in die IDT eintragen.
+## A12.2: Ein Mapping für das Anwendungsimage
+In der vorgegeben `multiboot.rs` finden Sie zwei Funktionen, die Sie in Ihre `multiboot.rs` kopieren sollen. Diese sind dafür zuständing, das TAR-Archiv mit unseren Anwendungen zu finden. Mit `get_initrd_archive()` erhalten Sie sich eine Referenz auf das Archiv. Das dazugehörige Struct und dessen Implementierung kommen aus der Crate `tar-no-std`. Mit der `entries()`-Methode des `TarArchiveRef`-Structs erhält man einen Iterator über alle Dateien des Archivs und kann diese so z.B. mit einer for-each-Schleife durchsuchen.
 
-Sofern der Kernel weiterhin funktioniert, können wieder die Interrupts aktiviert werden sowie unsere bestehenden User Threads ge­testet werden.
+Neue User-Threads sollen nun immer eine Anwendung aus dem TAR-Archiv ausführen. Dazu muss physikalischer Speicher in der passenden Größe alloziert und die Anwenndung dorthin kopiert werden. Anschließend muss Sie dieser physikalische Speicher in den Adressraum der Anwendung eingeblendet werden. Wir verwenden hierzu die Adresse `0x100_0000_0000`, was 1 TiB entspricht (siehe `consts.rs`). Hierfür bietet es sich an, eine weitere Funktion `map_user_app()` in `pages.rs` zu implementieren. Die `entry`-Funktion eines User-Threads soll nun einfach auf diese feste virtuelle Adresse verweisen. Mit `core::mem::transmute()` lässt sich die Konstante in den Typ `fn()` umwandeln (*ACHTUNG: Das ist unsafe und sollte nur in Ausnahmefällen genutzt werden!*).
 
-*Wichtige Information für diese Aufgabe finden Sie in Intel Software Developer’s Manual Volume 3 in Kapitel 5.5 4-Level Paging and 5-Level Paging.*
+Da die Anwendungen nun nicht mehr Teil des Kernel-Images sind, lassen sie sich nicht direkt debuggen, da der Debugger die Symbole der Anwendnungen nicht kennt. Um das zu ändern, können Sie nach dem Starten des Debuggers das System anhalten und in der GDB-Konsole mit dem Befehl `add-symbol-file target/hhu_tosr_app/debug/hello.elf` die Anwendungssymbole nachladen. *ACHTUNG: Es sollte immer nur eine Anwendung auf einmal geladen werden, da sie sich die virtuellen Adressen der Anwendungen überlappen*.
 
-## A11.2: Seitentabellen für User Threads
-Nun soll eine erste Isolation der Threads im User-Mode erfolgen, zunächst nur für die Stacks. Der Stack jedes User-Mode Threads soll an einem gegebenen virtuellen Adressbereich liegen (ab 64 TiB) (siehe `consts.rs`). Der User-Stack soll also nicht mehr über den globalen Heap-Allokator alloziert werden. Damit dieser Adressbereich genutzt werden kann muss ein Mapping in den Seitentabellen eingerichtet werden. Hierfür muss in `pages.rs` die Funktion `map_user_stack()` implementiert werden, welche in `threads.rs` für das Allozieren des User-Stacks verwendet werden soll. Die Funktion `PageTable::map()` muss dafür auch mit dem Parameter `kernel = false` umgehen können. Dabei soll auf der untersten Ebene nicht mehr ein 1:1 Mapping wie beim Kernel eingerichtet werden, sondern jeweils ein Page Frame mit Hilfe des Frame Allokators alloziert und eingeblendet werden.
+*Hinweis: Aus der main()-Funktion einer Anwendung kann man nicht mehr zurückkehren. Anwendungen müssen per System Call (`usr_thread_exit()`) beendet werden.
 
-Der User-Stack kann im `Thread`-Struct weiterhin als `Vec` angelegt werden, obwohl er nicht mehr dynamisch auf dem Heap alloziert wird, sonder die (virtuelle) Adresse jetzt fest ist. Hierzu kann die Rust-Funktion `Vec::from_raw_parts()` verwendet werden, welche einen neuen `Vec` mit einer gegebenen Adresse, Kapazität und Größe initialisiert. *ACHTUNG:* Diese Funktion sollte generell nur mit Vorsicht eingesetzt werden, da der `Vec` seinen Speicher auf dem Kernel-Heap freigeben möchte, wenn er gedropped wird.
+## A12.3: Kernel-Space schützen
+Bisher kann jede Anwendung auf den Kernel-Speicherbereich (Adressen kleiner als 1 TiB) zugreifen (lesend und schreibend). Nun soll der Kernel über das Paging geschützt werden, in dem bei den entsprechenden Seitentabellen-Einträgen das User-Bit (U/S) gelöscht wird.
 
-Der Kernel-Stack eines jeden Threads soll weiterhin über den Heap-Allokator angelegt werden. Jeder Thread bekommt so einen eigenen Addressraum, welchen wir bei der Erstellung eines Threads mit `pages::init_kernel_tables()` anlegen können. Der Kernel ist dadurch in jeden Addressraum eingeblendet und bleibt durch die bisher verwendeten Page Table Flags auch vom User Mode aus ausführbar. Das ändert sich in den kommenden Ausbaustufen des Systems.
+Anschließend muss noch der Startvorgang eines User-Threads angepasst werden. Wir können nun von `thrad_user_start()` nicht mehr nach `kickoff_user_thread()` springen, da diese Funktion Teil des Kernels ist und somit im User-Mode nicht mehr ausgeführt werden kann. Wir müssen daher in `switch_to_usermode()` nun direkt die `entry` Adresse eines User-Threads auf den vorbereiteten Stack legen, statt der Adresse von `kickoff_user_thread()`.
 
-Die Adresse der Page Map Level 4 (PML4), welche von `pages::init_kernel_tables()` zurückgegeben wird, muss außerdem im `Thread`-Struct gespeichert werden. In `Thread::start()` und `thread_switch()` muss nun bei jedem Thread-Wechsel auch in den Adressraum des nächsten Threads gewechselt werden. Hierzu bekommt `thread_switch()` einen weiteren Parameter `next_pml4`.
+## A12.4: Prozesse
+In dieser Aufgabe wird eine Verwaltungsstruktur für Prozesse implementiert sowie der Start von Threads umgebaut, sodass nun Prozesse mit jeweils einem Thread gestartet werden. 
 
-Testen Sie diese Aufgabe mit zwei User-Threads, beispielweise Threads die einen Zähler ausgeben. Prüfen Sie auch mit dem Debugger, dass die Stacks wirklich alle an der gleichen virtuellen Adresse beginnen und die Isolation funktioniert!
+Alle laufenden Prozesse sollen in `processes/process.rs` in einem Key-Value-Baum (`BTreeMap`) verwaltet werden. Als Key dient die Prozess-ID und als Value wird die Prozess-Struktur `Process` gespeichert. Hierdurch können Prozessinformationen später schnell über die pid abgerufen werden. Die Baumstruktor gibt es fertig in der Crate `alloc` (siehe Vorgabe).
 
-![Mapping eines virtuellen Adressraums](img/address_space.png)
+In `thread.rs` sind kleinere Anpassungen notwendig. Im `Thread`-Struct wird nun auch die Prozess-ID gespeichert, damit jeder Thread die Zuordnung zu seinem Prozess kennt.
 
-*Abschließende Bemerkungen*
- - *Die Isolation des Codes folgt später. Wir haben zwar bereits eine Systemaufrufsschnittstelle, können aber daran vorbei noch beliebige Funktionen des Kernels aufrufen.*
- - *Auch die Isolation des Heaps folgt später. Wir verwenden also vorerst unseren globalen Allokator für jeden User-Level Thread, welcher noch Speicher im Kernel-Space verwendet.*
- - *Beides funktioniert noch, da wir die die Seiten für den Kernel noch nicht geschützt haben.*
+In `scheduler.rs` soll eine Funktion `spawn_process()` implementiert werden, welche den Namen einer Anwendung entgegennimmt, einen Prozess dafür anlegt, und sie in einem User-Thread startet. Wenn eine Anwendung beendet wird (`Scheduler::exit()`), soll außerdem auch der entsprechende Prozess aus der `BTreeMap` gelöscht werden.
+
+Zuletzt soll ein System Call implementiert werden, der die Prozess-ID des aktuell laufenden Threads zurückgibt. Testen Sie Ihr System außerdem, in dem Sie verschiedene System Calls von einer Anwendung aus aufrufen.

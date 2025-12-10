@@ -1,6 +1,6 @@
 [package]
 edition = "2024"
-name = "hhu_tosr"
+name = "os"
 version = "0.1.0"
 authors = ["Michael Schöttner <michael.schoettner@hhu.de>"]
 
@@ -9,7 +9,9 @@ crate-type = ["staticlib"]
 path = "src/startup.rs"
 
 [dependencies]
+usrlib = { path = "../usrlib" }
+
 spin = "0.10.0"
-x86_64 = "0.15.2"
 nolock = { version = "0.4.1", default-features = false, features = ["queues"] }
 bitflags = "2.9.0"
+tar-no-std = "0.4.2"

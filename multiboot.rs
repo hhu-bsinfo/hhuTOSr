@@ -1,5 +1,13 @@
 use tar_no_std::TarArchiveRef;
 
+#[derive(Debug, Copy, Clone)]
+struct ModuleEntry {
+    start: u32,
+    end: u32,
+    cmdline: u32,
+    reserved: u32,
+}
+
 fn get_initrd(&self) -> Option<&'static [u8]> {
     if self.flags & (MultibootFlag::ModulesAvailable as u32) != 0 {
         if self.mods_count == 0 {

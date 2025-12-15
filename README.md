@@ -20,6 +20,8 @@ Um mit der neuen Ordnerstruktur zu starten, müssen Sie Ihren bisherigen Quellco
 
 In `usrlib/print.rs` sind bereits die Makros `pint!()` und `println!()` für den User-Space implementiert. Diese erwarten, dass der System Call `usr_print(msg: &str)` in `user_api.rs` implementiert ist. Dieser soll einen String an der aktuellen Cursor-Position ausgeben. Sie können die Vorgabe natürlich auch anpassen, falls Ihr System Call zur Textausgabe anders aussieht.
 
+In `os/src/boot/grub.cfg` muss außerdem noch die Zeile `module /boot/initrd.tar` unter `multiboot /boot/kernel.bin` ergänzt werden, damit der Bootloader das TAR-Archiv lädt.
+
 Beim Kompielieren ist nun der zusätzliche Parameter `--no-workspace` notwendig. Dieser sorgt dafür, dass das Build-System nicht die `Makefile.toml` jedes Unterprojekts einzeln ausführt, sondern nur die `Makefile.toml` im Wurzelverzeichnis unserer Projektstruktur beachtet. Diese wiederum hat Abhängigkeiten zu den `link`-Tasks der einzelnen Anwendungen und stellt so sicher, dass das Boot-Image erst gebaut wird, wenn alle Anwendungen kompiliert und gelinkt wurden. Der vollständige Befehl zum Starten des Systems lauten nun:
 
 ```

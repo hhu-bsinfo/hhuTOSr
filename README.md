@@ -1,54 +1,36 @@
-# Aufgabe 12: Separat kompilierte Anwendungen & Prozesse
+# Aufgabe 13: Verwaltung virtueller Adressräume (Isolation & Schutz - Aufgabe 6)
 
 ## Lernziele
-1. Kernel- und User-Code separat voneinander kompilieren.
-2. Den Kernel vor Zugriff aus dem User Space schützen.
-3. Eine einfach Struktur zur Verwaltung von Prozessen einführen.
+1. Virtuelle Adressräume sollen abstrack durch Virtual Memory Areas (VMAs) verwaltet werden.
+2. User Mode Anwendungen bekommen einen eigenen Heap.
+3. User Stacks werden nicht direkt vollständig alloziert, sondern wachsen bei Bedarf.
 
-## A12.1: Getrennte Übersetzung von Anwendungen
-In der Vorgabe finden Sie die neue Ordnerstruktur für Ihr Betriebssystem. Diese ist auf der obersten Ebene in drei Ordner aufgeteilt:
- - `os`: Enthält den gesamten Kernel-Quellcode
- - `apps`: Enthält den Quellcode für alle Anwendungen. Jede Anwendung ist dabei ein separates Rust-Projekt in einem eigenen Unterordner. Vorgegeben ist nur die Anwendung `hello`.
- - `usrlib`: Enthält Bibliotheksfunktionen, die von den Anwendung verwendet werden können.
- 
- Machen Sie sich zunächst mit der Vorgabe vertraut. Unter `apps/hello` finden Sie eine Beispiel-Anwendung, die als eigenes Rust-Projekt separat vom Kernel kompiliert wird. Diese soll von unserem Betriebssystem zur Laufzeit in ihren eigenen Adressraum geladen und ausgeführt werden. Hierbei stellen sich zunächst einige Fragen:
-  1. *Wie kommt unser Betriebssystem an die Anwendung?* Der Bootloader GRUB kann zusätzlich zum Kernel auch noch sogenannte Module für uns in den Arbeitsspeicher laden. Ein Modul ist dabei einfach eine beliebige Datei, die im Boot-Image hinterlegt ist. Wir packen alle unsere Anwendung zusammen in ein (unkomprimiertes) TAR-Archiv und lassen dieses vom Bootloader in den Arbetsspeicher laden. Unser Betriebssystem kann dann jederzeit auf Anwendungen in dem Archiv zugreigen und diese ausführen. Um das TAR-Archiv zu parsen nutzen wir die Crate `tar-no-std`.
-  2. *Welches Dateiformat haben unsere Anwendungen und wie finden wir darin den Code?* Wir linken die Anwendungen zunächst im ELF-Format. Dieses ist jedoch recht komplex und unser Betriebssystem bräuchte einen eigenen Parser dafür. Wir nutzen daher das Programm `objcopy` um den Code aus der ELF-Teil zu extrahieren und in einer sogenannten *Flat Binary* zu speichern. Diese enthält dann ausschließlich den Code und erfordert kein spezielles Parsing. Wir müssen bei diesem Ansatz nur dafür sorgen, dass die `main()`-Funktion einer Anwendung immer direkt am Anfang der Datei steht. Dafür versehen wir die `main()`-Funktion mit `#[unsafe(link_section = ".main")]` und erzeugen so eine eigene Sektion für diese. Im Linker-Skript sorgen wir dann dafür, dass die `main`-Sektion immer an den Anfang des Codes gelinkt wird.
-  3. *Wie können Anwendungen auf gemeinsame Bibliotheksfunktionen zugreifen, ohne dass wir doppelten Code erzeugen?* Dazu werden alle Bibliotheksfunktionen im Ordner `usrlib` implementiert. Jede Anwendung hat in ihrer `Makefile.toml` eine Abhängigkeit zu diesem Ordner. Das sorgt dafür, dass der Code aus `usrlib` mit jeder Anwendung kompiliert und statisch gelinkt wird.
+## A13.1: Virtual Memory Areas (VMAs)
+n dieser Aufgabe soll der virtuelle Adressraum eines Prozesses abstrakt mithilfe von Virtual Memory Areas (VMAs), ähnlich wie unter Linux, verwaltet werden. Eine VMA ist eine Region im virtuellen Adressraum, hat also eine Anfangs- und Endadresse (beide seitenaligniert) sowie einen Typ (Code, Stack, Heap) und eine VMA gehört immer zu genau einem Prozess.
 
-Um mit der neuen Ordnerstruktur zu starten, müssen Sie Ihren bisherigen Quellcode nach `os/src` kopieren. Anschließen müssen die Dateien `user_api.rs` und `spinlock.rs` nach `usrlib/src` kopiert werden. Dies erfordert leiche Anpassungen an Ihrem System, überall dort wo `Spinlock` importiert wird. Die Importe müssen so angepasst werden, dass sie nun das Spinlock aus `usrlib` importieren. Das Betriebssystem hat in seiner `Makefile.toml` bereits eine Abhängigkeit zur `usrlib`, so dass es dabei keine größeren Probleme geben sollte.
+Das Paging wird wie bisher verwendet, um separate Adressräume zu realisieren sowie den Speicherschutz des Kernel-Adressbereichs sicherzustellen.
 
-In `usrlib/print.rs` sind bereits die Makros `pint!()` und `println!()` für den User-Space implementiert. Diese erwarten, dass der System Call `usr_print(msg: &str)` in `user_api.rs` implementiert ist. Dieser soll einen String an der aktuellen Cursor-Position ausgeben. Sie können die Vorgabe natürlich auch anpassen, falls Ihr System Call zur Textausgabe anders aussieht.
+Die VMAs eines Prozesses soll als `Vec` im `Process`-Struct gespeichert werden. Implementieren Sie zusätzlich die Funktion `process::add_vma(process_id: usize, vma: VMA)` um dem Prozess eine neue VMA hinzuzufügen. Diese Funktion soll prüfen, ob die neue VMA mit einer existierenden VMA überlappt und falls ja, einen Fehler zurückgeben und abbrechen. Falls keine Überlappung vorliegt, soll die neue VMA in der VMA-Liste des Prozesses gespeichert werden.
 
-In `os/src/boot/grub.cfg` muss außerdem noch die Zeile `module /boot/initrd.tar` unter `multiboot /boot/kernel.bin` ergänzt werden, damit der Bootloader das TAR-Archiv lädt.
+Für jeden Prozess soll initial eine VMA für den Code-Bereich (vom Start des User Mode Bereichs bis zum Ende des Codes der Anwendung) und eine VMA für den Stack (letzte Seite des User Mode Bereichs) angelegt werden.
 
-Beim Kompielieren ist nun der zusätzliche Parameter `--no-workspace` notwendig. Dieser sorgt dafür, dass das Build-System nicht die `Makefile.toml` jedes Unterprojekts einzeln ausführt, sondern nur die `Makefile.toml` im Wurzelverzeichnis unserer Projektstruktur beachtet. Diese wiederum hat Abhängigkeiten zu den `link`-Tasks der einzelnen Anwendungen und stellt so sicher, dass das Boot-Image erst gebaut wird, wenn alle Anwendungen kompiliert und gelinkt wurden. Der vollständige Befehl zum Starten des Systems lauten nun:
+Damit die VMAs eines Prozesses ausgegeben werden können soll ein neuer Systemaufruf `usr_dump_vmas()` implementiert und in einer Test-Anwendung ausprobiert werden. Dieser Aufruf soll mit `kprintln!()` alle VMAs des aufrufenden Prozesses ausgeben.
 
-```
-cargo make --no-workspace qemu
-```
+Weitere Informationen zu VMAs in Linux sind hier gut erläutert: https://manybutfinite.com/post/how-the-kernel-manages-your-memory/ 
 
-## A12.2: Ein Mapping für das Anwendungsimage
-In der vorgegeben `multiboot.rs` finden Sie zwei Funktionen, die Sie in Ihre `multiboot.rs` kopieren sollen. Diese sind dafür zuständing, das TAR-Archiv mit unseren Anwendungen zu finden. Mit `get_initrd_archive()` erhalten Sie sich eine Referenz auf das Archiv. Das dazugehörige Struct und dessen Implementierung kommen aus der Crate `tar-no-std`. Mit der `entries()`-Methode des `TarArchiveRef`-Structs erhält man einen Iterator über alle Dateien des Archivs und kann diese so z.B. mit einer for-each-Schleife durchsuchen.
+## A13.2: Ein Heap für Prozesse
+In dieser Aufgabe soll jeder Prozess einen eigenen User Mode Heap bekommen. Der Heap soll als VMA im virtuellen Adressraum des Prozesses verwaltet werden. Wir verwenden hierzu unseren existierenden Allokator und nutzen diesen nun für den Kernel und die User Anwendungen.
 
-Neue User-Threads sollen nun immer eine Anwendung aus dem TAR-Archiv ausführen. Dazu muss physikalischer Speicher in der passenden Größe alloziert und die Anwenndung dorthin kopiert werden. Anschließend muss Sie dieser physikalische Speicher in den Adressraum der Anwendung eingeblendet werden. Wir verwenden hierzu die Adresse `0x100_0000_0000`, was 1 TiB entspricht (siehe `consts.rs`). Hierfür bietet es sich an, eine weitere Funktion `map_user_app()` in `pages.rs` zu implementieren. Die `entry`-Funktion eines User-Threads soll nun einfach auf diese feste virtuelle Adresse verweisen. Mit `core::mem::transmute()` lässt sich die Konstante in den Typ `fn()` umwandeln (*ACHTUNG: Das ist unsafe und sollte nur in Ausnahmefällen genutzt werden!*).
+Verschieben Sie hierfür zunächst den Ordner `kernel/allocator/` und die Datei `kernel/allocator.rs` nach `usrlib`. Nemen Sie anschließend alle nötigen Änderungen am Code vor, damit das Betriebssystem weiterhin kompiliert und läuft (z.B. Anpassung von includes).
 
-Da die Anwendungen nun nicht mehr Teil des Kernel-Images sind, lassen sie sich nicht direkt debuggen, da der Debugger die Symbole der Anwendnungen nicht kennt. Um das zu ändern, können Sie nach dem Starten des Debuggers das System anhalten und in der GDB-Konsole mit dem Befehl `add-symbol-file target/hhu_tosr_app/debug/hello.elf` die Anwendungssymbole nachladen. *ACHTUNG: Es sollte immer nur eine Anwendung auf einmal geladen werden, da sie sich die virtuellen Adressen der Anwendungen überlappen*.
+Der Speicherbereich, den der Allokator verwaltet soll über einen neuen Systemaufruf `usr_map_heap(user_heap_start: u64, user_heap_size: usize)` angefordert werden. Hierzu wird eine weitere Funktion `map_user_heap(pml4_table: &mut PageTable, user_heap_start: u64, user_heap_size: usize)` in `pages.rs` benötigt. Der allozierte Adressbereich soll im User Mode Adressbereich liegen und für die benötigten Page Frames des Heaps sollen vom dem Page Frame Allokator angefordert werden.
 
-*Hinweis: Aus der main()-Funktion einer Anwendung kann man nicht mehr zurückkehren. Anwendungen müssen per System Call (`usr_thread_exit()`) beendet werden.
+Test Sie den neuen Heap in einer User Mode Anwendung, indem Sie den Systemaufruf `usr_map_heap()` aufrufen und anschließend dynamisch Speicher allozieren (z.B. mit `Box::new()` oder `Vec::with_capacity()`).
 
-## A12.3: Kernel-Space schützen
-Bisher kann jede Anwendung auf den Kernel-Speicherbereich (Adressen kleiner als 1 TiB) zugreifen (lesend und schreibend). Nun soll der Kernel über das Paging geschützt werden, in dem bei den entsprechenden Seitentabellen-Einträgen das User-Bit (U/S) gelöscht wird.
+## A13.3: Dynamische Vergrößerung des User Stacks
+Bisher wurde der Stack für jeden User-Thread mit einer festen Größe alloziert, dies soll nun angepasst werden, sodass der Stack bei Bedarf dynamisch wächst. Hierzu sind keine Änderungen im User-Mode notwendig, jedoch im Kernel.
 
-Anschließend muss noch der Startvorgang eines User-Threads angepasst werden. Wir können nun von `thrad_user_start()` nicht mehr nach `kickoff_user_thread()` springen, da diese Funktion Teil des Kernels ist und somit im User-Mode nicht mehr ausgeführt werden kann. Wir müssen daher in `switch_to_usermode()` nun direkt die `entry` Adresse eines User-Threads auf den vorbereiteten Stack legen, statt der Adresse von `kickoff_user_thread()`.
+Die Funktion `pages::map_user_stack()` soll so angepasst werden, dass nur die oberste Seite des Stacks alloziert und eingeblendet wird (die VMA soll aber weiterhin die gesamte Stack-Größe abdecken).
+Wächst der Stack nun über eine Größe von 4 KiB hinaus, sollte eine Page Fault ausgelöst werden. Testen Sie dies, indem Sie in einer User Mode Anwendung eine große Menge an Stack-Speicher allozieren. Hierfür bietet sich eine rekursive Funktion an, die am besten viele Parameter hat (oder ein großes Struct als Parameter übergeben bekommt). Zum Beispiel können Sie die Fibonacci-Funktion mit zusätzlichen ungenutzten Parametern implementieren.
 
-## A12.4: Prozesse
-In dieser Aufgabe wird eine Verwaltungsstruktur für Prozesse implementiert sowie der Start von Threads umgebaut, sodass nun Prozesse mit jeweils einem Thread gestartet werden. 
-
-Alle laufenden Prozesse sollen in `processes/process.rs` in einem Key-Value-Baum (`BTreeMap`) verwaltet werden. Als Key dient die Prozess-ID und als Value wird die Prozess-Struktur `Process` gespeichert. Hierdurch können Prozessinformationen später schnell über die pid abgerufen werden. Die Baumstruktor gibt es fertig in der Crate `alloc` (siehe Vorgabe).
-
-In `thread.rs` sind kleinere Anpassungen notwendig. Im `Thread`-Struct wird nun auch die Prozess-ID gespeichert, damit jeder Thread die Zuordnung zu seinem Prozess kennt.
-
-In `scheduler.rs` soll eine Funktion `spawn_process()` implementiert werden, welche den Namen einer Anwendung entgegennimmt, einen Prozess dafür anlegt, und sie in einem User-Thread startet. Wenn eine Anwendung beendet wird (`Scheduler::exit()`), soll außerdem auch der entsprechende Prozess aus der `BTreeMap` gelöscht werden.
-
-Zuletzt soll ein System Call implementiert werden, der die Prozess-ID des aktuell laufenden Threads zurückgibt. Testen Sie Ihr System außerdem, in dem Sie verschiedene System Calls von einer Anwendung aus aufrufen.
+Erweitern Sie anschließend den Page Fault Handler in `interrupts.rs` so, dass geprüft wird, ob die Page Fault Adresse innerhalb des virtuellen Speicherbereichs für den User Stack liegt. Falls ja, soll für die betroffene Page ein Page Frame alloziert und eingeblendet werden, sodass der Stack wächst. Hierzu bietet sich die Implementierung einer Hilfsfunktion `check_and_grow_user_stack()` in `pages.rs` an, die im Page Fault Handler aufgerufen wird.

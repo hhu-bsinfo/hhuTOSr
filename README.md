@@ -12,7 +12,7 @@ Das Paging wird wie bisher verwendet, um separate Adressräume zu realisieren so
 
 Die VMAs eines Prozesses soll als `Vec` im `Process`-Struct gespeichert werden. Implementieren Sie zusätzlich die Funktion `process::add_vma(process_id: usize, vma: VMA)` um dem Prozess eine neue VMA hinzuzufügen. Diese Funktion soll prüfen, ob die neue VMA mit einer existierenden VMA überlappt und falls ja, einen Fehler zurückgeben und abbrechen. Falls keine Überlappung vorliegt, soll die neue VMA in der VMA-Liste des Prozesses gespeichert werden.
 
-Für jeden Prozess soll initial eine VMA für den Code-Bereich (vom Start des User Mode Bereichs bis zum Ende des Codes der Anwendung) und eine VMA für den Stack (letzte Seite des User Mode Bereichs) angelegt werden.
+Für jeden Prozess soll initial eine VMA für den Code-Bereich (vom Start des User Mode Bereichs bis zum Ende des Codes der Anwendung) und eine VMA für den Stack angelegt werden.
 
 Damit die VMAs eines Prozesses ausgegeben werden können soll ein neuer Systemaufruf `usr_dump_vmas()` implementiert und in einer Test-Anwendung ausprobiert werden. Dieser Aufruf soll mit `kprintln!()` alle VMAs des aufrufenden Prozesses ausgeben.
 
